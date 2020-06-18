@@ -20,18 +20,20 @@
 #include <string.h>
 #include <unistd.h>
 
-#define WHITE  0xffffff
-#define BLACK  0x000000
-#define RED    0xff0000
-#define BLUE   0x0000ff
-#define NRM_FG BLACK // normal foreground
-#define NRM_BG WHITE // normal background
-#define SEL_FG RED   // selected foreground
-#define HID_FG BLUE  // hidden foreground
-#define BAR_FG NRM_FG
-#define BAR_BG NRM_BG
+#define WHITE      0xffffff
+#define BLACK      0x000000
+#define RED        0xff0000
+#define BLUE       0x0000ff
+#define COL_NRM_FG BLACK // normal foreground
+#define COL_NRM_BG WHITE // normal background
+#define COL_SEL_FG RED   // selected foreground
+#define COL_HID_FG BLUE  // hidden foreground
+#define BAR_FG     COL_NRM_FG
+#define BAR_BG     COL_NRM_BG
 
-#define BAR_H                20
+#define BAR_H                15
+#define CHAR_H               10
+#define CHAR_W               5
 #define CELL_W               20
 #define CELL_GAP             2
 #define CLIENT_GROWTH_FACTOR 2
@@ -56,6 +58,7 @@
 
 typedef int                  Cli;
 typedef int                  Mon;
+typedef enum GCType          GCType;
 typedef enum SwitchDirection SwitchDirection;
 typedef struct Monitor       Monitor;
 typedef struct MonitorList   MonitorList;
@@ -86,15 +89,25 @@ enum {
     KEY_MOD4  = 133,
 };
 
-typedef struct {
-    KeyCode      code;
-    unsigned int modifier;
-} Key;
+enum GCType {
+    NRM_FG,
+    NRM_BG,
+    SEL_FG,
+    SEL_BG,
+    HID_FG,
+    HID_BG,
+    GC_LAST_TYPE,
+};
 
 enum SwitchDirection {
     DOWN,
     UP,
 };
+
+typedef struct {
+    KeyCode      code;
+    unsigned int modifier;
+} Key;
 
 struct Monitor {
     short  x;
@@ -136,24 +149,24 @@ static void dmenu(void);
 static void draw_bars(void);
 static void draw_bar_on(int mon);
 static void draw_filled_rectangle(Drawable, GC, int, int, int, int);
-static int  free_monitor(void);
-static int  monitor_using_client(int index);
+static Mon  open_mon(void);
+static Mon  mon_using_cli(Cli);
 static bool in_client_list(Window);
 static void expand_clients(void);
 static void append_client(Window);
 static void set_client(int, int);
-static void try_remove_window(Window w);
+static void try_remove_window(Window);
 static void delete_client(int);
 static void unselect_client(int);
 static void kill_client(int);
-static void switch_client(SwitchDirection direction);
-static void switch_monitor(SwitchDirection direction);
+static void switch_client(SwitchDirection);
+static void switch_monitor(SwitchDirection);
 static void jump_cli(int);
 static void jump_mon(int);
 static void swap_clients(int, int);
 static void select_mon(Mon);
-static bool mon_in_range(int);
-static bool cli_in_range(int);
+static bool mon_in_range(Mon);
+static bool cli_in_range(Cli);
 static void restart(void);
 static void quit(void);
 static void end(void);
@@ -209,6 +222,8 @@ static KeyCode shift_keys[] = {
     KEY_q,
 };
 
+static GC gcs[GC_LAST_TYPE];
+
 static MonitorList monitors;
 static ClientList  clients;
 static Display *   dp;   // display pointer
@@ -261,10 +276,10 @@ static void setup(void) {
 
     selmon = 0;
 
-    XSetWindowAttributes root_attr = {.cursor     = cursor,
-                                      .event_mask = SubstructureRedirectMask | SubstructureNotifyMask |
-                                                    ButtonPressMask | KeyPressMask | KeyReleaseMask | EnterWindowMask |
-                                                    LeaveWindowMask | FocusChangeMask};
+    XSetWindowAttributes root_attr = {
+        .cursor     = cursor,
+        .event_mask = SubstructureRedirectMask | SubstructureNotifyMask | ButtonPressMask |
+                      /*KeyPressMask | KeyReleaseMask |*/ EnterWindowMask | LeaveWindowMask | FocusChangeMask};
     XChangeWindowAttributes(dp, root, CWEventMask | CWCursor, &root_attr);
 
     XSelectInput(dp, root, root_attr.event_mask);
@@ -310,6 +325,13 @@ static void init_gcs(void) {
     blue_values.background = BLACK;
 
     blue_gc = XCreateGC(dp, root, value_mask, &blue_values);
+
+    gcs[NRM_FG] = white_gc;
+    gcs[NRM_BG] = black_gc;
+    gcs[SEL_FG] = white_gc;
+    gcs[SEL_BG] = red_gc;
+    gcs[HID_FG] = white_gc;
+    gcs[HID_BG] = blue_gc;
 }
 
 static void init_clients(void) {
@@ -374,12 +396,10 @@ static void init_bars(void) {
 }
 
 static void press_mod(void) {
-    mod = true;
     for (int i = 0; i < LENGTH(shift_keys); ++i)
         XGrabKey(dp, shift_keys[i], ShiftMask, root, True, GrabModeAsync, GrabModeAsync);
 }
 
-// storing mod and shift shouldn't be needed anymore since i learned to use grabkeys, but I'll fix that later
 static void key_down(XEvent *e) {
     switch (e->xkey.keycode) {
         case KEY_1:
@@ -391,37 +411,33 @@ static void key_down(XEvent *e) {
         case KEY_7:
         case KEY_8:
         case KEY_9:
-            if (mod && shift) jump_mon(e->xkey.keycode - KEY_1 + 1);
-            else if (mod)
+            if (shift)
+                jump_mon(e->xkey.keycode - KEY_1 + 1);
+            else
                 jump_cli(e->xkey.keycode - KEY_1 + 1);
             break;
         case KEY_0:
-            if (mod && shift) jump_mon(0);
-            else if (mod)
+            if (shift)
+                jump_mon(0);
+            else
                 jump_cli(0);
             break;
-        case KEY_c:
-            if (mod) kill_client(MON_CLI(selmon));
-            break;
+        case KEY_c: kill_client(MON_CLI(selmon)); break;
         case KEY_j:
-            if (mod && shift) switch_monitor(DOWN);
-            else if (mod)
+            if (shift)
+                switch_monitor(DOWN);
+            else
                 switch_client(DOWN);
             break;
         case KEY_k:
-            if (mod && shift) switch_monitor(UP);
-            else if (mod)
+            if (shift)
+                switch_monitor(UP);
+            else
                 switch_client(UP);
             break;
-        case KEY_p:
-            if (mod) dmenu();
-            break;
-        case KEY_q:
-            if (mod) end();
-            break;
-        case KEY_r:
-            if (mod) restart();
-            break;
+        case KEY_p: dmenu(); break;
+        case KEY_q: end(); break;
+        case KEY_r: restart(); break;
         case KEY_MOD4: press_mod(); break;
         case KEY_SHIFT: shift = true; break;
         default: break;
@@ -429,7 +445,6 @@ static void key_down(XEvent *e) {
 }
 
 static void release_mod(void) {
-    mod = false;
     // keys will no longer be captured by wm when shift is pressed
     for (int i = 0; i < LENGTH(shift_keys); ++i) XUngrabKey(dp, shift_keys[i], ShiftMask, root);
 }
@@ -450,7 +465,7 @@ static void map(XEvent *e) {
         return;
     }
 
-    int open_mon;
+    Mon open;
     if (!in_client_list(request.window)) {
         append_client(request.window);
 
@@ -460,10 +475,10 @@ static void map(XEvent *e) {
             XMapWindow(dp, request.window);
         }
         // any monitor available
-        else if ((open_mon = free_monitor()) != -1) {
-            set_client(open_mon, clients.count - 1);
+        else if ((open = open_mon()) != -1) {
+            set_client(open, clients.count - 1);
             XMapWindow(dp, request.window);
-            select_mon(open_mon);
+            select_mon(open);
         }
     }
 
@@ -525,43 +540,47 @@ static void draw_bars(void) {
 
 static void draw_bar_on(int mon) {
     if (!mon_in_range(mon)) return;
-    Monitor *m = MONITOR(mon);
+    Monitor *m   = MONITOR(mon);
+    Window   bar = m->bar;
+    char     num[12];
+    int      len;
+    GC       fg;
+    GC       bg;
+    int      x;
 
-    Window bar = m->bar;
+    fg  = gcs[selmon == mon ? SEL_FG : NRM_FG];
+    bg  = gcs[selmon == mon ? SEL_BG : NRM_BG];
+    len = sprintf(num, "Monitor %d", mon);
 
-    if (selmon == mon) draw_filled_rectangle(bar, red_gc, 0, 0, m->w, BAR_H);
-    else
-        draw_filled_rectangle(bar, white_gc, 0, 0, m->w, BAR_H);
+    draw_filled_rectangle(bar, bg, 0, 0, m->w, BAR_H);
+    XDrawString(dp, bar, fg, m->w - len * 10, BAR_H / 2 + CHAR_H / 2, num, len);
 
-    // todo: add check that client count under 999
-    char num[12];
-    int  len;
     // starts at -1 to mark when no clients selected
     for (int i = -1; i < clients.count; ++i) {
-        draw_filled_rectangle(bar, m->cli == i ? red_gc : black_gc, (i + 1) * (CELL_W + CELL_GAP), 0, CELL_W, BAR_H);
+        fg = gcs[m->cli == i ? SEL_FG : NRM_FG];
+        bg = gcs[m->cli == i ? SEL_BG : NRM_BG];
+        x  = (i + 1) * (CELL_W + CELL_GAP);
+
+        draw_filled_rectangle(bar, bg, x, 0, CELL_W, BAR_H);
+
         len = sprintf(num, "%d", i);
-        if (len > 0)
-            XDrawString(dp, bar, white_gc, (i + 1) * (CELL_W + CELL_GAP) + CELL_W / 2.25, BAR_H / 1.5, num, len);
+        XDrawString(dp, bar, fg, x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
     }
-    len = sprintf(num, "Monitor %d", mon);
-    if (len > 0) XDrawString(dp, bar, blue_gc, m->w - len * 10, BAR_H / 1.5, num, len);
 }
 
 static void draw_filled_rectangle(Drawable d, GC gc, int x, int y, int w, int h) {
-    // todo: use DrawLine instead of DrawPoint
-    for (int x_i = x; x_i < x + w; ++x_i)
-        for (int y_i = y; y_i < y + h; ++y_i) XDrawPoint(dp, d, gc, x_i, y_i);
+    for (int y_i = y; y_i < y + h; ++y_i) XDrawLine(dp, d, gc, x, y_i, x + w, y_i);
 }
 
 static bool in_client_list(Window w) {
-    for (int i = 0; i < clients.count; i++)
-        if (clients.array[i].window == w) return true;
+    for (int cli = 0; cli < clients.count; cli++)
+        if (CLI_WINDOW(cli) == w) return true;
     return false;
 }
 
-static int free_monitor(void) {
-    for (int i = 0; i < monitors.count; ++i)
-        if (MON_CLI(i) == -1) return i;
+static Mon open_mon(void) {
+    for (int mon = 0; mon < monitors.count; ++mon)
+        if (MON_CLI(mon) == -1) return mon;
     return -1;
 }
 
@@ -627,12 +646,11 @@ static int wrap_client_index(int index) {
     return ret_index;
 }
 
-static void focus(int mon) {
-    const long ptr_event_mask =
-        ButtonPressMask | ButtonReleaseMask | EnterWindowMask | LeaveWindowMask | PointerMotionMask;
-    Window w = root;
+static void focus(Mon mon) {
+    const long ptr_event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+    Window     w              = root;
     if (MON_CLI(mon) != -1) w = MON_WINDOW(mon);
-    XGrabPointer(dp, w, True, ptr_event_mask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+    // XGrabPointer(dp, w, False, ptr_event_mask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XSetInputFocus(dp, w, RevertToPointerRoot, CurrentTime);
     printf("focus set to monitor %d\n", selmon);
 }
@@ -640,7 +658,7 @@ static void focus(int mon) {
 // select client displayed on selected monitor; -1 to select none
 static void select_client(int cli) {
     // get current monitor before setting
-    int prevmon = monitor_using_client(cli);
+    int prevmon = mon_using_cli(cli);
 
     // remove the window currently on the monitor if it exists
     if (MON_CLI(selmon) != -1) {
@@ -701,22 +719,10 @@ static void select_mon(Mon mon) {
     focus(selmon = mon);
 }
 
-static int monitor_using_client(int index) {
-    for (int i = 0; i < monitors.count; i++)
-        if (MON_CLI(i) == index) return i;
+static Mon mon_using_cli(Cli cli) {
+    for (Mon mon = 0; mon < monitors.count; mon++)
+        if (MON_CLI(mon) == cli) return mon;
     return -1;
-}
-
-static void swap_clients(int from_mon, int to_mon) {
-    if (to_mon < 0 || to_mon >= monitors.count) return;
-
-    if (from_mon < 0 || from_mon >= monitors.count) return;
-
-    if (MON_CLI(to_mon) != -1) XUnmapWindow(dp, MON_CLI(to_mon));
-
-    set_client(to_mon, MON_CLI(from_mon));
-
-    MON_CLI(from_mon) = -1;
 }
 
 static bool mon_in_range(Mon mon) { return mon >= 0 && mon < monitors.count; }
@@ -724,8 +730,7 @@ static bool mon_in_range(Mon mon) { return mon >= 0 && mon < monitors.count; }
 static bool cli_in_range(Cli cli) { return cli >= 0 && cli < clients.count; }
 
 static void restart(void) {
-    free(monitors.array);
-    free_clients();
+    end();
     setup();
 }
 

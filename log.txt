@@ -1,0 +1,82 @@
+Running Steam on arch rolling 64-bit
+STEAM_RUNTIME is enabled automatically
+Pins up-to-date!
+Steam client's requirements are satisfied
+/home/pugpugpugs/.local/share/Steam/ubuntu12_32/steam
+STEAM_RUNTIME_HEAVY: ./steam-runtime-heavy
+Entering a window
+changing focus
+changing focus
+changing focus
+changing focus
+changing focus
+changing focus
+changing focus
+focus set to monitor 1
+focus set to monitor 0
+changing focus
+changing focus
+changing focus
+focus set to monitor 1
+Entering a window
+changing focus
+focus set to monitor 2
+Entering a window
+changing focus
+focus set to monitor 1
+focus set to monitor 0
+Entering a window
+focus set to monitor 3
+Entering a window
+changing focus
+focus set to monitor 0
+changing focus
+changing focus
+changing focus
+focus set to monitor 2
+Entering a window
+changing focus
+changing focus
+Entering a window
+focus set to monitor 3
+changing focus
+changing focus
+focus set to monitor 2
+Entering a window
+changing focus
+focus set to monitor 1
+focus set to monitor 1
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+focus set to monitor 1
+changing focus
+changing focus
+Entering a window
+changing focus
+focus set to monitor 1
+changing focus
+focus set to monitor 1
+changing focus
+changing focus
+Entering a window
+changing focus
+focus set to monitor 1
+Entering a window
+Entering a window
+Entering a window
+changing focus
+focus set to monitor 1
+Entering a window
+changing focus
+changing focus
+changing focus
+changing focus
+changing focus
+focus set to monitor 2
+focus set to monitor 1
+focus set to monitor 0
+focus set to monitor 3
