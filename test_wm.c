@@ -10,8 +10,6 @@
 // doesn't happen if no windows created
 // not that big a deal, since resources freed beforehand
 //
-// newly created clients are not automatically focused, though they are switched to properly
-//
 // the system for managing the shift key is totally redundant
 // there is no need to grab the same already grabbed keys for mod-shift to work, since a boolean is set when shift
 // pressed it will work without that
@@ -229,23 +227,6 @@ static KeyCode mod_keys[] = {
     KEY_SHIFT,
 };
 
-static KeyCode shift_keys[] = {
-    KEY_1,
-    KEY_2,
-    KEY_3,
-    KEY_4,
-    KEY_5,
-    KEY_6,
-    KEY_7,
-    KEY_8,
-    KEY_9,
-    KEY_0,
-    KEY_j,
-    KEY_k,
-    KEY_p,
-    KEY_q,
-};
-
 static GC gcs[GC_LAST_TYPE];
 
 static MonitorList monitors;
@@ -407,11 +388,6 @@ static void init_bars(void) {
     }
 }
 
-static void press_mod(void) {
-    for (int i = 0; i < LENGTH(shift_keys); ++i)
-        XGrabKey(dp, shift_keys[i], ShiftMask, root, True, GrabModeAsync, GrabModeAsync);
-}
-
 static void key_down(XEvent *e) {
     switch (e->xkey.keycode) {
         case KEY_1:
@@ -451,20 +427,13 @@ static void key_down(XEvent *e) {
         case KEY_q: end(); break;
         case KEY_r: restart(); break;
         case KEY_minus: change_cli_for(-1, selmon); break;
-        case KEY_MOD4: press_mod(); break;
         case KEY_SHIFT: shift = true; break;
         default: break;
     }
 }
 
-static void release_mod(void) {
-    // keys will no longer be captured by wm when shift is pressed
-    for (int i = 0; i < LENGTH(shift_keys); ++i) XUngrabKey(dp, shift_keys[i], ShiftMask, root);
-}
-
 static void key_up(XEvent *e) {
     switch (e->xkey.keycode) {
-        case KEY_MOD4: release_mod(); break;
         case KEY_SHIFT: shift = false; break;
         default: break;
     }
@@ -647,9 +616,9 @@ static void change_cli_for(Cli cli, Mon mon) {
         MON_CLI(mon) = -1;
     }
 
+    // fit client to new monitor if it exists
     if (cli != -1) {
         Monitor *m = MONITOR(mon);
-        // resize cli to fit monitor
         XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
     }
 
@@ -666,13 +635,13 @@ static void change_cli_for(Cli cli, Mon mon) {
     draw_bar_on(mon);
 }
 
-static void deselect_cli(int index) {
-    for (int cur_mon = 0; cur_mon < monitors.count; ++cur_mon)
-        if (MON_CLI(cur_mon) == index) MON_CLI(cur_mon) = -1;
+static void deselect_cli(Cli cli) {
+    for (Mon cur_mon = 0; cur_mon < monitors.count; ++cur_mon)
+        if (MON_CLI(cur_mon) == cli) MON_CLI(cur_mon) = -1;
 }
 
 // I need to learn client messages eventually, but this is good for now
-// XKillClient basically destroys the client's resources so works
+// XKillClient destroys the client's resources so not the worst bad practice
 static void kill_client(int cli) {
     XGrabServer(dp);
     XSetErrorHandler(dummy_error_handler);
@@ -701,16 +670,13 @@ static Mon wrap_mon(Mon mon) {
 }
 
 static void focus(Mon mon) {
-    // const long ptr_event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
     Window w = root;
     if (MON_CLI(mon) != -1) w = MON_WINDOW(mon);
-    // XGrabPointer(dp, w, False, ptr_event_mask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XSetInputFocus(dp, w, RevertToPointerRoot, CurrentTime);
-    printf("focus set to monitor %d\n", selmon);
 }
 
+// moves one client up/down in list on selmon
 static void switch_client(SwitchDirection direction) {
-    fprintf(stderr, "Switching clients in direction %s\n", direction == DOWN ? "DOWN" : "UP");
     switch (direction) {
         case DOWN: change_cli_for(wrap_cli(MON_CLI(selmon) - 1), selmon); break;
         case UP: change_cli_for(wrap_cli(MON_CLI(selmon) + 1), selmon); break;

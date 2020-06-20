@@ -4,60 +4,11 @@ changing focus
 changing focus
 changing focus
 changing focus
-changing focus
-Entering a window
-focus set to monitor 0
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-focus set to monitor 0
-changing focus
-focus set to monitor 1
-Entering a window
-changing focus
-focus set to monitor 1
-focus set to monitor 2
-Entering a window
-changing focus
-focus set to monitor 2
-focus set to monitor 3
-Entering a window
-changing focus
-focus set to monitor 3
-focus set to monitor 3
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 2
-focus set to monitor 2
-changing focus
-changing focus
-focus set to monitor 0
-focus set to monitor 0
 Entering a window
 changing focus
 changing focus
 changing focus
-focus set to monitor 1
-focus set to monitor 1
-Entering a window
 changing focus
-focus set to monitor 1
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 1
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 1
 changing focus
 changing focus
 Entering a window
@@ -67,25 +18,6 @@ changing focus
 changing focus
 changing focus
 changing focus
-focus set to monitor 1
-changing focus
-focus set to monitor 1
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 1
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 1
-changing focus
-changing focus
-Entering a window
-changing focus
-focus set to monitor 1
-changing focus
 changing focus
 Entering a window
 changing focus
@@ -94,31 +26,57 @@ changing focus
 changing focus
 changing focus
 changing focus
-focus set to monitor 1
 changing focus
 changing focus
-focus set to monitor 2
-Entering a window
-changing focus
-focus set to monitor 2
-focus set to monitor 2
 changing focus
 changing focus
-Entering a window
 changing focus
-focus set to monitor 2
+changing focus
 changing focus
 changing focus
 Entering a window
 changing focus
-focus set to monitor 2
 changing focus
 changing focus
 Entering a window
 changing focus
-focus set to monitor 2
 changing focus
 changing focus
 Entering a window
 changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
+changing focus
+changing focus
+changing focus
+Entering a window
 changing focus
