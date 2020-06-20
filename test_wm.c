@@ -9,6 +9,27 @@
 // it happens in XCloseDisplay I think
 // doesn't happen if no windows created
 // not that big a deal, since resources freed beforehand
+//
+// newly created clients are not automatically focused, though they are switched to properly
+//
+// the system for managing the shift key is totally redundant
+// there is no need to grab the same already grabbed keys for mod-shift to work, since a boolean is set when shift
+// pressed it will work without that
+// just be sure to grab the shift key under modmask in the beginning and it will literally work exactly the same without
+// the lag
+//
+//
+// ideas:
+// a keybinding which notifies date on the statusbar
+// I don't personally like having date on my dsktop because I believe it limits intuition for time, but a temp
+// notification is no different from checking phone so it'd be cool
+//
+// window swallowing support by launching the relevant client on selmon, switching to it, then switching back when it is
+// selected and exits
+//
+// similar to ^, support for the previous client and monitor keybinding
+//
+//
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -24,12 +45,15 @@
 #define BLACK      0x000000
 #define RED        0xff0000
 #define BLUE       0x0000ff
-#define COL_NRM_FG BLACK // normal foreground
-#define COL_NRM_BG WHITE // normal background
-#define COL_SEL_FG RED   // selected foreground
+#define SKY_BLUE   0x1867b9
+#define DARK_BLUE  0x0066ff
+#define COL_NRM_FG WHITE    // normal foreground
+#define COL_NRM_BG SKY_BLUE // normal background
+#define COL_SEL_FG BLACK    // selected foreground
+#define COL_SEL_BG WHITE    // selected background
+// not implemented yet
 #define COL_HID_FG BLUE  // hidden foreground
-#define BAR_FG     COL_NRM_FG
-#define BAR_BG     COL_NRM_BG
+#define COL_HID_BG BLACK // hidden background
 
 #define BAR_H                15
 #define CHAR_H               10
@@ -38,9 +62,6 @@
 #define CELL_GAP             2
 #define CLIENT_GROWTH_FACTOR 2
 #define CLIENT_MAX           999
-
-#define DISPLAY_STRING    ":0"
-#define DP_MONITOR_STRING ":DP-0"
 
 #define PRINT_XINERAMA_MONITOR(mon) \
     fprintf(stderr, "screen %d: (%d, %d) %d by %d\n", mon.screen_number, mon.x_org, mon.y_org, mon.width, mon.height)
@@ -66,8 +87,6 @@ typedef struct Client        Client;
 typedef struct ClientList    ClientList;
 typedef void (*EventHandler)(XEvent *);
 
-// fucking x keycodes
-// why in the hell is j > q
 enum {
     KEY_1     = 10,
     KEY_2     = 11,
@@ -79,13 +98,14 @@ enum {
     KEY_8     = 17,
     KEY_9     = 18,
     KEY_0     = 19,
-    KEY_c     = 54,
-    KEY_j     = 44,
-    KEY_k     = 45,
-    KEY_p     = 33,
+    KEY_minus = 20,
     KEY_q     = 24,
     KEY_r     = 27,
+    KEY_p     = 33,
+    KEY_j     = 44,
+    KEY_k     = 45,
     KEY_SHIFT = 50,
+    KEY_c     = 54,
     KEY_MOD4  = 133,
 };
 
@@ -154,15 +174,16 @@ static Mon  mon_using_cli(Cli);
 static bool in_client_list(Window);
 static void expand_clients(void);
 static void append_client(Window);
-static void set_client(int, int);
 static void try_remove_window(Window);
-static void delete_client(int);
-static void unselect_client(int);
-static void kill_client(int);
+static void delete_client(Cli);
+static void change_cli_for(Cli, Mon);
+static void deselect_cli(Cli);
+static void kill_client(Cli);
+static void focus(Mon);
 static void switch_client(SwitchDirection);
 static void switch_monitor(SwitchDirection);
-static void jump_cli(int);
-static void jump_mon(int);
+static void jump_cli(Cli);
+static void jump_mon(Mon);
 static void swap_clients(int, int);
 static void select_mon(Mon);
 static bool mon_in_range(Mon);
@@ -184,25 +205,28 @@ static EventHandler handle_event[LASTEvent] = {
     [DestroyNotify] = destroy,
 };
 
-static Key keys[] = {
-    {KEY_1, Mod4Mask},
-    {KEY_2, Mod4Mask},
-    {KEY_3, Mod4Mask},
-    {KEY_4, Mod4Mask},
-    {KEY_5, Mod4Mask},
-    {KEY_6, Mod4Mask},
-    {KEY_7, Mod4Mask},
-    {KEY_8, Mod4Mask},
-    {KEY_9, Mod4Mask},
-    {KEY_0, Mod4Mask},
-    {KEY_c, Mod4Mask},
-    {KEY_j, Mod4Mask},
-    {KEY_k, Mod4Mask},
-    {KEY_p, Mod4Mask},
-    {KEY_q, Mod4Mask},
-    {KEY_r, Mod4Mask},
-    {KEY_SHIFT, Mod4Mask},
-    {KEY_MOD4, AnyModifier},
+static KeyCode keys[] = {
+    KEY_MOD4,
+};
+
+static KeyCode mod_keys[] = {
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_0,
+    KEY_c,
+    KEY_j,
+    KEY_k,
+    KEY_p,
+    KEY_q,
+    KEY_r,
+    KEY_SHIFT,
 };
 
 static KeyCode shift_keys[] = {
@@ -231,7 +255,6 @@ static Screen *    sp;   // screen pointer to the struct
 static int         sn;   // screen number number of display, better than calling funcs to get it every time
 static Window      root; // parent of topmost windows
 static int         selmon;
-static GC          white_gc;
 static GC          black_gc;
 static GC          red_gc;
 static GC          blue_gc;
@@ -252,12 +275,9 @@ int main() {
 }
 
 static void setup(void) {
-    // enables restarting
-    if (!running) {
-        if ((dp = XOpenDisplay(NULL)) == NULL) {
-            fprintf(stderr, "failed to open display %s!\n", XDisplayString(dp));
-            exit(1);
-        }
+    if ((dp = XOpenDisplay(NULL)) == NULL) {
+        fprintf(stderr, "failed to open display %s!\n", XDisplayString(dp));
+        exit(1);
     }
 
     sp      = XDefaultScreenOfDisplay(dp);
@@ -267,8 +287,10 @@ static void setup(void) {
     cursor  = XCreateFontCursor(dp, XC_left_ptr);
 
     XUngrabKey(dp, AnyKey, AnyModifier, root);
-    for (int i = 0; i < LENGTH(keys); ++i)
-        XGrabKey(dp, keys[i].code, keys[i].modifier, root, True, GrabModeAsync, GrabModeAsync);
+    for (int i = 0; i < LENGTH(keys); ++i) XGrabKey(dp, keys[i], AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
+
+    for (int i = 0; i < LENGTH(mod_keys); ++i)
+        XGrabKey(dp, mod_keys[i], Mod4Mask, root, True, GrabModeAsync, GrabModeAsync);
 
     init_gcs();
     init_clients();
@@ -276,10 +298,10 @@ static void setup(void) {
 
     selmon = 0;
 
-    XSetWindowAttributes root_attr = {
-        .cursor     = cursor,
-        .event_mask = SubstructureRedirectMask | SubstructureNotifyMask | ButtonPressMask |
-                      /*KeyPressMask | KeyReleaseMask |*/ EnterWindowMask | LeaveWindowMask | FocusChangeMask};
+    XSetWindowAttributes root_attr
+        = {.cursor     = cursor,
+           .event_mask = SubstructureRedirectMask | SubstructureNotifyMask | ButtonPressMask |
+                         /*KeyPressMask | KeyReleaseMask |*/ EnterWindowMask | LeaveWindowMask | FocusChangeMask};
     XChangeWindowAttributes(dp, root, CWEventMask | CWCursor, &root_attr);
 
     XSelectInput(dp, root, root_attr.event_mask);
@@ -294,44 +316,34 @@ static void setup(void) {
 static void init_gcs(void) {
     const unsigned long value_mask = GCCapStyle | GCJoinStyle | GCForeground | GCBackground;
 
-    XGCValues white_values;
-    white_values.cap_style  = CapButt;
-    white_values.join_style = JoinBevel;
-    white_values.foreground = WHITE;
-    white_values.background = BLACK;
+    XGCValues gc_vals = {
+        .cap_style  = CapButt,
+        .join_style = JoinBevel,
+    };
 
-    white_gc = XCreateGC(dp, root, value_mask, &white_values);
+    gc_vals.foreground = COL_NRM_FG;
+    gc_vals.background = COL_NRM_FG;
+    gcs[NRM_FG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 
-    XGCValues black_values;
-    black_values.cap_style  = CapButt;
-    black_values.join_style = JoinBevel;
-    black_values.foreground = BLACK;
-    black_values.background = WHITE;
+    gc_vals.foreground = COL_NRM_BG;
+    gc_vals.background = COL_NRM_FG;
+    gcs[NRM_BG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 
-    black_gc = XCreateGC(dp, root, value_mask, &black_values);
+    gc_vals.foreground = COL_SEL_FG;
+    gc_vals.background = COL_SEL_BG;
+    gcs[SEL_FG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 
-    XGCValues red_values;
-    red_values.cap_style  = CapButt;
-    red_values.join_style = JoinBevel;
-    red_values.foreground = RED;
-    red_values.background = BLACK;
+    gc_vals.foreground = COL_SEL_BG;
+    gc_vals.background = COL_SEL_FG;
+    gcs[SEL_BG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 
-    red_gc = XCreateGC(dp, root, value_mask, &red_values);
+    gc_vals.foreground = COL_HID_FG;
+    gc_vals.background = COL_HID_BG;
+    gcs[HID_FG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 
-    XGCValues blue_values;
-    blue_values.cap_style  = CapButt;
-    blue_values.join_style = JoinBevel;
-    blue_values.foreground = BLUE;
-    blue_values.background = BLACK;
-
-    blue_gc = XCreateGC(dp, root, value_mask, &blue_values);
-
-    gcs[NRM_FG] = white_gc;
-    gcs[NRM_BG] = black_gc;
-    gcs[SEL_FG] = white_gc;
-    gcs[SEL_BG] = red_gc;
-    gcs[HID_FG] = white_gc;
-    gcs[HID_BG] = blue_gc;
+    gc_vals.foreground = COL_HID_BG;
+    gc_vals.background = COL_HID_FG;
+    gcs[HID_BG]        = XCreateGC(dp, root, value_mask, &gc_vals);
 }
 
 static void init_clients(void) {
@@ -389,8 +401,8 @@ static void init_bars(void) {
                                                     monitors.array[i].w,
                                                     BAR_H,
                                                     0,
-                                                    BAR_FG,
-                                                    BAR_BG);
+                                                    COL_NRM_FG,
+                                                    COL_NRM_BG);
         XMapWindow(dp, monitors.array[i].bar);
     }
 }
@@ -438,6 +450,7 @@ static void key_down(XEvent *e) {
         case KEY_p: dmenu(); break;
         case KEY_q: end(); break;
         case KEY_r: restart(); break;
+        case KEY_minus: change_cli_for(-1, selmon); break;
         case KEY_MOD4: press_mod(); break;
         case KEY_SHIFT: shift = true; break;
         default: break;
@@ -471,15 +484,27 @@ static void map(XEvent *e) {
 
         // selected monitor free
         if (MON_CLI(selmon) == -1) {
-            set_client(selmon, clients.count - 1);
+            change_cli_for(clients.count - 1, selmon);
+            /*
+            set_cli(selmon, clients.count - 1);
             XMapWindow(dp, request.window);
+            focus(selmon);
+            */
         }
         // any monitor available
         else if ((open = open_mon()) != -1) {
-            set_client(open, clients.count - 1);
+            // needs fixing b/c redundant focus in select_mon
+            select_mon(open);
+            change_cli_for(clients.count - 1, selmon);
+            /*
+            set_cli(open, clients.count - 1);
             XMapWindow(dp, request.window);
             select_mon(open);
+            */
         }
+        // no monitor available
+        else // switch to new client on selected monitor
+            change_cli_for(clients.count - 1, selmon);
     }
 
     draw_bars();
@@ -538,7 +563,7 @@ static void draw_bars(void) {
     for (int i = 0; i < monitors.count; ++i) { draw_bar_on(i); }
 }
 
-static void draw_bar_on(int mon) {
+static void draw_bar_on(Mon mon) {
     if (!mon_in_range(mon)) return;
     Monitor *m   = MONITOR(mon);
     Window   bar = m->bar;
@@ -584,16 +609,6 @@ static Mon open_mon(void) {
     return -1;
 }
 
-static void set_client(int mon, int cl) {
-    if (mon == -1) return;
-    if (cl != -1) {
-        // resize client window to fit monitor
-        Monitor *m = monitors.array + mon;
-        XMoveResizeWindow(dp, CLI_WINDOW(cl), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
-    }
-    MON_CLI(mon) = cl;
-}
-
 static void try_remove_window(Window w) {
     // bool used in case client not removed
     bool removed = false;
@@ -601,7 +616,7 @@ static void try_remove_window(Window w) {
     for (int i = 0; i < clients.count;)
         if (clients.array[i].window == w) {
             delete_client(i);
-            unselect_client(i);
+            deselect_cli(i);
             removed = true;
         } else
             ++i;
@@ -609,17 +624,49 @@ static void try_remove_window(Window w) {
     if (removed) draw_bars();
 }
 
-static void delete_client(int index) {
+static void delete_client(Cli cli) {
     // range check
-    if (index < 0 || index >= clients.count) return;
-
-    // shift items back one, overwriting index
-    for (int i = index; i < clients.count - 1; ++i) clients.array[i] = clients.array[i + 1];
+    if (cli < 0 || cli >= clients.count) return;
 
     --clients.count;
+
+    // shift items back one, overwriting index
+    for (Cli i = cli; i < clients.count; ++i) clients.array[i] = clients.array[i + 1];
 }
 
-static void unselect_client(int index) {
+// select client displayed on selected monitor; -1 to select none
+static void change_cli_for(Cli cli, Mon mon) {
+    if (mon == -1) return;
+
+    // get current monitor before setting
+    Mon prevmon = mon_using_cli(cli);
+
+    // remove the window currently on the monitor if it exists
+    if (MON_CLI(mon) != -1) {
+        XUnmapWindow(dp, MON_WINDOW(mon));
+        MON_CLI(mon) = -1;
+    }
+
+    if (cli != -1) {
+        Monitor *m = MONITOR(mon);
+        // resize cli to fit monitor
+        XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
+    }
+
+    MON_CLI(mon) = cli;
+
+    // if client was in use
+    if (prevmon != -1) {
+        MON_CLI(prevmon) = -1;
+        draw_bar_on(prevmon);
+    } else if (cli != -1)
+        XMapWindow(dp, MON_WINDOW(mon));
+
+    focus(mon);
+    draw_bar_on(mon);
+}
+
+static void deselect_cli(int index) {
     for (int cur_mon = 0; cur_mon < monitors.count; ++cur_mon)
         if (MON_CLI(cur_mon) == index) MON_CLI(cur_mon) = -1;
 }
@@ -636,92 +683,68 @@ static void kill_client(int cli) {
     XUngrabServer(dp);
 }
 
-static int wrap_client_index(int index) {
-    int ret_index = index;
+static int wrap_cli(Cli cli) {
+    Cli ret = cli;
     // negative wrapping
-    while (ret_index < -1) ret_index += clients.count + 1;
+    while (ret < -1) ret += clients.count + 1;
     // positive wrapping
-    while (ret_index > clients.count - 1) ret_index -= clients.count + 1;
+    while (ret >= clients.count) ret -= clients.count + 1;
 
-    return ret_index;
+    return ret;
+}
+
+static Mon wrap_mon(Mon mon) {
+    Mon ret = mon;
+    while (ret < 0) ret += monitors.count;
+    while (ret >= monitors.count) ret -= monitors.count;
+    return ret;
 }
 
 static void focus(Mon mon) {
-    const long ptr_event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
-    Window     w              = root;
+    // const long ptr_event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+    Window w = root;
     if (MON_CLI(mon) != -1) w = MON_WINDOW(mon);
     // XGrabPointer(dp, w, False, ptr_event_mask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XSetInputFocus(dp, w, RevertToPointerRoot, CurrentTime);
     printf("focus set to monitor %d\n", selmon);
 }
 
-// select client displayed on selected monitor; -1 to select none
-static void select_client(int cli) {
-    // get current monitor before setting
-    int prevmon = mon_using_cli(cli);
-
-    // remove the window currently on the monitor if it exists
-    if (MON_CLI(selmon) != -1) {
-        XUnmapWindow(dp, MON_WINDOW(selmon));
-        MON_CLI(selmon) = -1;
-    }
-
-    set_client(selmon, cli);
-
-    // if client was in use
-    if (prevmon != -1) {
-        MON_CLI(prevmon) = -1;
-        draw_bar_on(prevmon);
-    } else
-        XMapWindow(dp, MON_WINDOW(selmon));
-
-    focus(selmon);
-    draw_bar_on(selmon);
-}
-
 static void switch_client(SwitchDirection direction) {
-    int new_index = -1;
+    fprintf(stderr, "Switching clients in direction %s\n", direction == DOWN ? "DOWN" : "UP");
     switch (direction) {
-        case DOWN: new_index = wrap_client_index(MON_CLI(selmon) - 1); break;
-        case UP: new_index = wrap_client_index(MON_CLI(selmon) + 1); break;
-        default: return;
+        case DOWN: change_cli_for(wrap_cli(MON_CLI(selmon) - 1), selmon); break;
+        case UP: change_cli_for(wrap_cli(MON_CLI(selmon) + 1), selmon); break;
     }
-
-    select_client(new_index);
 }
 
-static void jump_cli(Cli cli) { select_client(cli_in_range(cli) ? cli : -1); }
+static void jump_cli(Cli cli) { change_cli_for(cli_in_range(cli) ? cli : -1, selmon); }
 
 static void jump_mon(Mon mon) { select_mon(mon_in_range(mon) ? mon : selmon); }
 
-// Please refactor me!
 static void switch_monitor(SwitchDirection direction) {
-    Monitor *newmon;
-    int      prevmon = selmon;
+    fprintf(stderr, "Switching monitors in direction %s\n", direction == DOWN ? "DOWN" : "UP");
     switch (direction) {
-        case DOWN:
-            newmon = selmon <= 0 ? monitors.array + (selmon = monitors.count - 1) : monitors.array + --selmon;
-            break;
-        case UP:
-            newmon = selmon >= monitors.count - 1 ? monitors.array + (selmon = 0) : monitors.array + ++selmon;
-            break;
-        default: return;
+        case DOWN: select_mon(wrap_mon(selmon - 1)); break;
+        case UP: select_mon(wrap_mon(selmon + 1)); break;
     }
-    select_mon(MON(newmon));
-    draw_bar_on(prevmon);
-    draw_bar_on(newmon - monitors.array);
 }
 
 static void select_mon(Mon mon) {
+    Mon prevmon = selmon;
+
     Monitor *m = MONITOR(mon);
 
     move_cursor(m->x + m->w / 2, m->y + m->h / 2);
     focus(selmon = mon);
+
+    draw_bar_on(prevmon);
+    draw_bar_on(selmon);
 }
 
 static Mon mon_using_cli(Cli cli) {
-    for (Mon mon = 0; mon < monitors.count; mon++)
-        if (MON_CLI(mon) == cli) return mon;
+    if (cli != -1)
+        for (Mon mon = 0; mon < monitors.count; mon++)
+            if (MON_CLI(mon) == cli) return mon;
     return -1;
 }
 
@@ -774,21 +797,19 @@ static void move_cursor(int x, int y) {
     int    cur_x;
     int    cur_y;
     Window cur_window;
-    int    root_w;
-    int    root_h;
     XQueryPointer(dp, root, &a, &cur_window, &cur_x, &cur_y, &b, &b, &c);
+
+    int root_w;
+    int root_h;
     XGetGeometry(dp, root, &a, &b, &b, &root_w, &root_h, &b, &b);
 
     // prevent cursor from being confined to a window
-    int result =
-        XGrabPointer(dp, root, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime);
-
-    if (result != GrabSuccess) {
+    if (XGrabPointer(dp, root, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
+        != GrabSuccess) {
         fprintf(stderr, "failed to move cursor - couldn't grab\n");
         return;
     }
 
-    Monitor *m = MONITOR(selmon);
     // moves by offset to the point specified as arguments
     XWarpPointer(dp, root, root, 0, 0, root_w, root_h, x, y);
 
