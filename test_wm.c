@@ -25,9 +25,10 @@
 // window swallowing support by launching the relevant client on selmon, switching to it, then switching back when it is
 // selected and exits
 //
-// similar to ^, support for the previous client and monitor keybinding
+// similar to ^, support for previous client or monitor keybinding
 //
-//
+// check at beginning for windows and take control of them
+// would let restart avoid killing windows
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -72,6 +73,7 @@
 #define CLI_WINDOW(cli) clients.array[cli].window
 #define MON_CLI(mon)    monitors.array[mon].cli
 #define MON_WINDOW(mon) CLI_WINDOW(MON_CLI(mon))
+#define CLI_EXISTS(cli) (cli != -1)
 
 #define LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
@@ -173,7 +175,7 @@ static bool in_client_list(Window);
 static void expand_clients(void);
 static void append_client(Window);
 static void try_remove_window(Window);
-static void delete_client(Cli);
+static void delete_cli(Cli);
 static void change_cli_for(Cli, Mon);
 static void deselect_cli(Cli);
 static void kill_client(Cli);
@@ -440,41 +442,26 @@ static void key_up(XEvent *e) {
 }
 
 static void map(XEvent *e) {
-    XMapRequestEvent request = e->xmaprequest;
+    XMapRequestEvent m_req = e->xmaprequest;
 
-    if (request.parent != root) {
-        XMapWindow(dp, request.window);
+    if (m_req.parent != root || in_client_list(m_req.window)) {
+        XMapWindow(dp, m_req.window);
         return;
     }
 
-    Mon open;
-    if (!in_client_list(request.window)) {
-        append_client(request.window);
+    append_client(m_req.window);
 
-        // selected monitor free
-        if (MON_CLI(selmon) == -1) {
-            change_cli_for(clients.count - 1, selmon);
-            /*
-            set_cli(selmon, clients.count - 1);
-            XMapWindow(dp, request.window);
-            focus(selmon);
-            */
-        }
-        // any monitor available
-        else if ((open = open_mon()) != -1) {
-            // needs fixing b/c redundant focus in select_mon
-            select_mon(open);
-            change_cli_for(clients.count - 1, selmon);
-            /*
-            set_cli(open, clients.count - 1);
-            XMapWindow(dp, request.window);
-            select_mon(open);
-            */
-        }
-        // no monitor available
-        else // switch to new client on selected monitor
-            change_cli_for(clients.count - 1, selmon);
-    }
+    Cli newcli  = clients.count - 1;
+    Mon openmon = open_mon();
+
+    // if a monitor is open and selected monitor has a client
+    if (openmon != -1 && MON_CLI(selmon) != -1)
+        // select the open monitor
+        // needs fixing b/c redundant focus in select_mon
+        select_mon(openmon);
+
+    // use the new client on selected monitor
+    change_cli_for(newcli, selmon);
 
     draw_bars();
 }
@@ -507,9 +494,10 @@ static void dmenu(void) {
 
 static void append_client(Window w) {
     if (clients.count >= CLIENT_MAX) {
-        fprintf(
-            stderr,
-            "Due to string drawing limitations, only 999 simultaneous clients are supported at this time. Bye bye.");
+        fprintf(stderr,
+                "Due to string drawing limitations, only %d simultaneous clients are supported at this time. Have a "
+                "cheerio day!",
+                CLIENT_MAX);
         exit(1);
     }
 
@@ -563,6 +551,7 @@ static void draw_bar_on(Mon mon) {
 }
 
 static void draw_filled_rectangle(Drawable d, GC gc, int x, int y, int w, int h) {
+    // not sure whether this or nested loops w/XDrawPoint is worse, but meh
     for (int y_i = y; y_i < y + h; ++y_i) XDrawLine(dp, d, gc, x, y_i, x + w, y_i);
 }
 
@@ -579,12 +568,11 @@ static Mon open_mon(void) {
 }
 
 static void try_remove_window(Window w) {
-    // bool used in case client not removed
     bool removed = false;
 
     for (int i = 0; i < clients.count;)
         if (clients.array[i].window == w) {
-            delete_client(i);
+            delete_cli(i);
             deselect_cli(i);
             removed = true;
         } else
@@ -593,14 +581,14 @@ static void try_remove_window(Window w) {
     if (removed) draw_bars();
 }
 
-static void delete_client(Cli cli) {
+static void delete_cli(Cli cli) {
     // range check
     if (cli < 0 || cli >= clients.count) return;
 
     --clients.count;
 
-    // shift items back one, overwriting index
-    for (Cli i = cli; i < clients.count; ++i) clients.array[i] = clients.array[i + 1];
+    // shift items back one, overwriting cli
+    for (Cli cur = cli; cur < clients.count; ++cur) clients.array[cur] = clients.array[cur + 1];
 }
 
 // select client displayed on selected monitor; -1 to select none
@@ -617,7 +605,7 @@ static void change_cli_for(Cli cli, Mon mon) {
     }
 
     // fit client to new monitor if it exists
-    if (cli != -1) {
+    if (CLI_EXISTS(cli)) {
         Monitor *m = MONITOR(mon);
         XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
     }
@@ -628,7 +616,7 @@ static void change_cli_for(Cli cli, Mon mon) {
     if (prevmon != -1) {
         MON_CLI(prevmon) = -1;
         draw_bar_on(prevmon);
-    } else if (cli != -1)
+    } else if (CLI_EXISTS(cli))
         XMapWindow(dp, MON_WINDOW(mon));
 
     focus(mon);
@@ -708,7 +696,7 @@ static void select_mon(Mon mon) {
 }
 
 static Mon mon_using_cli(Cli cli) {
-    if (cli != -1)
+    if (CLI_EXISTS(cli))
         for (Mon mon = 0; mon < monitors.count; mon++)
             if (MON_CLI(mon) == cli) return mon;
     return -1;

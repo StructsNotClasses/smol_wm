@@ -1,16 +1,6 @@
 Entering a window
 changing focus
 changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
 Entering a window
 changing focus
 changing focus
@@ -21,18 +11,15 @@ changing focus
 changing focus
 Entering a window
 changing focus
+Entering a window
 changing focus
 changing focus
 changing focus
+Entering a window
 changing focus
 changing focus
 changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
+Entering a window
 changing focus
 Entering a window
 changing focus
@@ -49,34 +36,4 @@ changing focus
 Entering a window
 changing focus
 changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
 changing focus
