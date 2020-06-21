@@ -1,34 +1,23 @@
 // Shitty Manager of cLients Window Manager (SMOLWM)
 //
-// docs:
-// a client is just a window, really. I thought they'd end up doing more but meh
-// I use 'mon' to describe an index of a monitor, and 'cli' that of a client
-//
 // issues:
 // it segfaults when closing for some reason
 // it happens in XCloseDisplay I think
 // doesn't happen if no windows created
 // not that big a deal, since resources freed beforehand
 //
-// the system for managing the shift key is totally redundant
-// there is no need to grab the same already grabbed keys for mod-shift to work, since a boolean is set when shift
-// pressed it will work without that
-// just be sure to grab the shift key under modmask in the beginning and it will literally work exactly the same without
-// the lag
-//
-//
 // ideas:
 // a keybinding which notifies date on the statusbar
 // I don't personally like having date on my dsktop because I believe it limits intuition for time, but a temp
 // notification is no different from checking phone so it'd be cool
 //
-// window swallowing support by launching the relevant client on selmon, switching to it, then switching back when it is
-// selected and exits
-//
-// similar to ^, support for previous client or monitor keybinding
+// window swallowing support, probably with a keybind, that tells wm to switch to prevcli on selmon when the current
+// client closes
 //
 // check at beginning for windows and take control of them
 // would let restart avoid killing windows
+//
+// a keybinding that locks all input unless pressed again
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -65,18 +54,26 @@
 #define PRINT_XINERAMA_MONITOR(mon) \
     fprintf(stderr, "screen %d: (%d, %d) %d by %d\n", mon.screen_number, mon.x_org, mon.y_org, mon.width, mon.height)
 
+#define NONE (-1)
+
+// could be the same macro, but this allows seperate refactoring
+#define CLI_EXISTS(cli) (cli != NONE)
+#define MON_EXISTS(mon) (mon != NONE)
+
 // utility macros that make it possible to use indices, rather than pointers, throughout the codebase
-#define CLI(client)     client - clients.array
-#define MON(monitor)    monitor - monitors.array
-#define CLIENT(cli)     clients.array + cli
-#define MONITOR(mon)    monitors.array + mon
-#define CLI_WINDOW(cli) clients.array[cli].window
-#define MON_CLI(mon)    monitors.array[mon].cli
-#define MON_WINDOW(mon) CLI_WINDOW(MON_CLI(mon))
-#define CLI_EXISTS(cli) (cli != -1)
+#define CLI(client)      (client - clients.array)
+#define MON(monitor)     (monitor - monitors.array)
+#define CLIENT(cli)      (clients.array + cli)
+#define MONITOR(mon)     (monitors.array + mon)
+#define CLI_WINDOW(cli)  clients.array[cli].window
+#define MON_CLI(mon)     monitors.array[mon].cli
+#define MON_PREVCLI(mon) monitors.array[mon].prevcli
+#define MON_WINDOW(mon)  CLI_WINDOW(MON_CLI(mon))
 
 #define LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
+// Cli and Mon used to represent client and monitor indices respectively
+// using Cli and Mon may seem pointless, but makes the intention of many statements much more clear
 typedef int                  Cli;
 typedef int                  Mon;
 typedef enum GCType          GCType;
@@ -98,7 +95,8 @@ enum {
     KEY_8     = 17,
     KEY_9     = 18,
     KEY_0     = 19,
-    KEY_minus = 20,
+    KEY_MINUS = 20,
+    KEY_TAB   = 23,
     KEY_q     = 24,
     KEY_r     = 27,
     KEY_p     = 33,
@@ -135,6 +133,7 @@ struct Monitor {
     short  w;
     short  h;
     Cli    cli;
+    Cli    prevcli;
     Window bar;
 };
 
@@ -175,8 +174,9 @@ static bool in_client_list(Window);
 static void expand_clients(void);
 static void append_client(Window);
 static void try_remove_window(Window);
+static Cli  prev_cli(void);
 static void delete_cli(Cli);
-static void change_cli_for(Cli, Mon);
+static void change_cli_for_mon(Cli, Mon);
 static void deselect_cli(Cli);
 static void kill_client(Cli);
 static void focus(Mon);
@@ -237,7 +237,8 @@ static Display *   dp;   // display pointer
 static Screen *    sp;   // screen pointer to the struct
 static int         sn;   // screen number number of display, better than calling funcs to get it every time
 static Window      root; // parent of topmost windows
-static int         selmon;
+static Mon         prevmon;
+static Mon         selmon;
 static GC          black_gc;
 static GC          red_gc;
 static GC          blue_gc;
@@ -279,7 +280,7 @@ static void setup(void) {
     init_clients();
     init_monitors();
 
-    selmon = 0;
+    prevmon = selmon = 0;
 
     XSetWindowAttributes root_attr
         = {.cursor     = cursor,
@@ -352,11 +353,14 @@ static void init_monitors(void) {
 
     // move monitors into array
     for (int count = 0; count < monitors.count; ++count)
-        monitors.array[count] = (Monitor){.x   = screen_info[count].x_org,
-                                          .y   = screen_info[count].y_org,
-                                          .w   = screen_info[count].width,
-                                          .h   = screen_info[count].height,
-                                          .cli = -1};
+        monitors.array[count] = (Monitor){
+            .x       = screen_info[count].x_org,
+            .y       = screen_info[count].y_org,
+            .w       = screen_info[count].width,
+            .h       = screen_info[count].height,
+            .cli     = NONE,
+            .prevcli = NONE,
+        };
     // sort array by x vals
     // not the cleanest algo; but come on, it runs once
     for (int i = 0; i < monitors.count - 1; ++i) {
@@ -368,7 +372,7 @@ static void init_monitors(void) {
             monitors.array[i + 1] = tmp;
 
             // start over
-            i = -1;
+            i = NONE;
         }
     }
 
@@ -428,7 +432,13 @@ static void key_down(XEvent *e) {
         case KEY_p: dmenu(); break;
         case KEY_q: end(); break;
         case KEY_r: restart(); break;
-        case KEY_minus: change_cli_for(-1, selmon); break;
+        case KEY_MINUS: change_cli_for_mon(NONE, selmon); break;
+        case KEY_TAB:
+            if (shift)
+                jump_mon(prevmon);
+            else
+                change_cli_for_mon(MON_PREVCLI(selmon), selmon);
+            break;
         case KEY_SHIFT: shift = true; break;
         default: break;
     }
@@ -441,29 +451,26 @@ static void key_up(XEvent *e) {
     }
 }
 
+// runs whenever a window is made visible, which is the cue to start managing it
+// I don't see why a wm would manage invisible/unmapped windows anyway
 static void map(XEvent *e) {
-    XMapRequestEvent m_req = e->xmaprequest;
+    XMapRequestEvent request = e->xmaprequest;
 
-    if (m_req.parent != root || in_client_list(m_req.window)) {
-        XMapWindow(dp, m_req.window);
-        return;
+    // is it a good idea to map any window that makes a request while in clientlist?
+    if (request.parent != root || in_client_list(request.window))
+        XMapWindow(dp, request.window);
+    else {
+        Mon openmon = open_mon();
+        if (MON_EXISTS(openmon) && CLI_EXISTS(MON_CLI(selmon)))
+            // needs fixing b/c redundant focus in select_mon
+            select_mon(openmon);
+
+        append_client(request.window);
+        Cli newcli = clients.count - 1;
+        change_cli_for_mon(newcli, selmon);
+
+        draw_bars();
     }
-
-    append_client(m_req.window);
-
-    Cli newcli  = clients.count - 1;
-    Mon openmon = open_mon();
-
-    // if a monitor is open and selected monitor has a client
-    if (openmon != -1 && MON_CLI(selmon) != -1)
-        // select the open monitor
-        // needs fixing b/c redundant focus in select_mon
-        select_mon(openmon);
-
-    // use the new client on selected monitor
-    change_cli_for(newcli, selmon);
-
-    draw_bars();
 }
 
 static void destroy(XEvent *e) {
@@ -538,14 +545,16 @@ static void draw_bar_on(Mon mon) {
     XDrawString(dp, bar, fg, m->w - len * 10, BAR_H / 2 + CHAR_H / 2, num, len);
 
     // starts at -1 to mark when no clients selected
-    for (int i = -1; i < clients.count; ++i) {
-        fg = gcs[m->cli == i ? SEL_FG : NRM_FG];
-        bg = gcs[m->cli == i ? SEL_BG : NRM_BG];
-        x  = (i + 1) * (CELL_W + CELL_GAP);
+    // this has a big problem if the NONE constant is changed to something other than -1
+    // needs to be fixed
+    for (Cli cli = -1; cli < clients.count; ++cli) {
+        fg = gcs[m->cli == cli ? SEL_FG : NRM_FG];
+        bg = gcs[m->cli == cli ? SEL_BG : NRM_BG];
+        x  = (cli + 1) * (CELL_W + CELL_GAP);
 
         draw_filled_rectangle(bar, bg, x, 0, CELL_W, BAR_H);
 
-        len = sprintf(num, "%d", i);
+        len = sprintf(num, "%d", cli);
         XDrawString(dp, bar, fg, x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
     }
 }
@@ -563,7 +572,7 @@ static bool in_client_list(Window w) {
 
 static Mon open_mon(void) {
     for (int mon = 0; mon < monitors.count; ++mon)
-        if (MON_CLI(mon) == -1) return mon;
+        if (MON_CLI(mon) == NONE) return mon;
     return -1;
 }
 
@@ -581,6 +590,8 @@ static void try_remove_window(Window w) {
     if (removed) draw_bars();
 }
 
+static Cli prev_cli(void) { return MONITOR(selmon)->prevcli; }
+
 static void delete_cli(Cli cli) {
     // range check
     if (cli < 0 || cli >= clients.count) return;
@@ -591,31 +602,34 @@ static void delete_cli(Cli cli) {
     for (Cli cur = cli; cur < clients.count; ++cur) clients.array[cur] = clients.array[cur + 1];
 }
 
-// select client displayed on selected monitor; -1 to select none
-static void change_cli_for(Cli cli, Mon mon) {
-    if (mon == -1) return;
-
-    // get current monitor before setting
-    Mon prevmon = mon_using_cli(cli);
-
-    // remove the window currently on the monitor if it exists
-    if (MON_CLI(mon) != -1) {
+static void clear_mon(Mon mon) {
+    if (CLI_EXISTS(MON_CLI(mon))) {
         XUnmapWindow(dp, MON_WINDOW(mon));
-        MON_CLI(mon) = -1;
+        MON_CLI(mon) = NONE;
     }
+}
 
-    // fit client to new monitor if it exists
+static void fit_cli_to_mon(Cli cli, Mon mon) {
     if (CLI_EXISTS(cli)) {
         Monitor *m = MONITOR(mon);
         XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
     }
+}
 
+// select client displayed on selected monitor; -1 to select none
+static void change_cli_for_mon(Cli cli, Mon mon) {
+    if (!MON_EXISTS(mon)) return;
+
+    MON_PREVCLI(mon)   = MON_CLI(mon);
+    Mon prev_using_mon = mon_using_cli(cli);
+
+    clear_mon(mon);
+    fit_cli_to_mon(cli, mon);
     MON_CLI(mon) = cli;
 
-    // if client was in use
-    if (prevmon != -1) {
-        MON_CLI(prevmon) = -1;
-        draw_bar_on(prevmon);
+    if (MON_EXISTS(prev_using_mon)) { // no need to map if was previously on a diff monitor
+        MON_CLI(prev_using_mon) = NONE;
+        draw_bar_on(prev_using_mon);
     } else if (CLI_EXISTS(cli))
         XMapWindow(dp, MON_WINDOW(mon));
 
@@ -624,13 +638,13 @@ static void change_cli_for(Cli cli, Mon mon) {
 }
 
 static void deselect_cli(Cli cli) {
-    for (Mon cur_mon = 0; cur_mon < monitors.count; ++cur_mon)
-        if (MON_CLI(cur_mon) == cli) MON_CLI(cur_mon) = -1;
+    for (Mon curmon = 0; curmon < monitors.count; ++curmon)
+        if (MON_CLI(curmon) == cli) MON_CLI(curmon) = NONE;
 }
 
 // I need to learn client messages eventually, but this is good for now
 // XKillClient destroys the client's resources so not the worst bad practice
-static void kill_client(int cli) {
+static void kill_client(Cli cli) {
     XGrabServer(dp);
     XSetErrorHandler(dummy_error_handler);
     XSetCloseDownMode(dp, DestroyAll);
@@ -640,7 +654,8 @@ static void kill_client(int cli) {
     XUngrabServer(dp);
 }
 
-static int wrap_cli(Cli cli) {
+// this breaks if NONE != -1, just for future reference
+static Cli wrap_cli(Cli cli) {
     Cli ret = cli;
     // negative wrapping
     while (ret < -1) ret += clients.count + 1;
@@ -659,19 +674,19 @@ static Mon wrap_mon(Mon mon) {
 
 static void focus(Mon mon) {
     Window w = root;
-    if (MON_CLI(mon) != -1) w = MON_WINDOW(mon);
+    if (MON_EXISTS(MON_CLI(mon))) w = MON_WINDOW(mon);
     XSetInputFocus(dp, w, RevertToPointerRoot, CurrentTime);
 }
 
 // moves one client up/down in list on selmon
 static void switch_client(SwitchDirection direction) {
     switch (direction) {
-        case DOWN: change_cli_for(wrap_cli(MON_CLI(selmon) - 1), selmon); break;
-        case UP: change_cli_for(wrap_cli(MON_CLI(selmon) + 1), selmon); break;
+        case DOWN: change_cli_for_mon(wrap_cli(MON_CLI(selmon) - 1), selmon); break;
+        case UP: change_cli_for_mon(wrap_cli(MON_CLI(selmon) + 1), selmon); break;
     }
 }
 
-static void jump_cli(Cli cli) { change_cli_for(cli_in_range(cli) ? cli : -1, selmon); }
+static void jump_cli(Cli cli) { change_cli_for_mon(cli_in_range(cli) ? cli : NONE, selmon); }
 
 static void jump_mon(Mon mon) { select_mon(mon_in_range(mon) ? mon : selmon); }
 
@@ -684,7 +699,7 @@ static void switch_monitor(SwitchDirection direction) {
 }
 
 static void select_mon(Mon mon) {
-    Mon prevmon = selmon;
+    prevmon = selmon;
 
     Monitor *m = MONITOR(mon);
 
@@ -699,7 +714,7 @@ static Mon mon_using_cli(Cli cli) {
     if (CLI_EXISTS(cli))
         for (Mon mon = 0; mon < monitors.count; mon++)
             if (MON_CLI(mon) == cli) return mon;
-    return -1;
+    return NONE;
 }
 
 static bool mon_in_range(Mon mon) { return mon >= 0 && mon < monitors.count; }
