@@ -8,7 +8,7 @@
 //
 // ideas:
 // a keybinding which notifies date on the statusbar
-// I don't personally like having date on my dsktop because I believe it limits intuition for time, but a temp
+// I don't personally like having date on my desktop because I believe it limits intuition for time, but a temp
 // notification is no different from checking phone so it'd be cool
 //
 // window swallowing support, probably with a keybind, that tells wm to switch to prevcli on selmon when the current
@@ -17,7 +17,37 @@
 // check at beginning for windows and take control of them
 // would let restart avoid killing windows
 //
-// a keybinding that locks all input unless pressed again
+// color for clients not displayed
+//
+// dependencies:
+// X11, Xinerama, dmenu
+//
+// keybindings:
+// mod4 is the windows key on most keyboards by the way
+//
+// mod4 + p: run dmenu, allowing you to create a new client
+//
+// mod4 + j: move one client down, wrapping if none selected
+// mod4 + k: move one client up, wrapping if at the end of the list
+//
+// mod4 + shift + j: move one monitor left, wrapping if at the end
+// mod4 + shift + k: move one monitor right, wrapping if at the end
+//
+// mod4 + tab: move to the previously selected client on the current monitor
+// mod4 + shift + tab: move to the previously selected monitor
+//
+// mod4 + 1-9: move to client at index if it exists; will select none if not
+// mod4 + shift + 1-9: move to the monitor at index if it exists
+//
+// mod4 + -: select none/deselect on current monitor
+//
+// mod4 + shift + -: select non/deselect on all monitors
+//
+// mod4 + l: toggles dummy mode. Deselects all clients and locks input, displaying fake empty bar. Press again to return
+// to selected clients.
+//
+// mod4 + r: restart, attempts to kill all clients then reloads the wm; will redetermine monitor locations.
+// mod4 + shift + q: quit, attempts to kill all clients then exits xorg
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -102,6 +132,7 @@ enum {
     KEY_p     = 33,
     KEY_j     = 44,
     KEY_k     = 45,
+    KEY_l     = 46,
     KEY_SHIFT = 50,
     KEY_c     = 54,
     KEY_MOD4  = 133,
@@ -165,8 +196,8 @@ static void enter(XEvent *);
 static void destroy(XEvent *);
 static void nothing(XEvent *);
 static void dmenu(void);
-static void draw_bars(void);
-static void draw_bar_on(int mon);
+static void draw_bars(const ClientList *const);
+static void draw_bar_on(Mon mon, const ClientList *const);
 static void draw_filled_rectangle(Drawable, GC, int, int, int, int);
 static Mon  open_mon(void);
 static Mon  mon_using_cli(Cli);
@@ -176,9 +207,10 @@ static void append_client(Window);
 static void try_remove_window(Window);
 static Cli  prev_cli(void);
 static void delete_cli(Cli);
+static void change_cli_for_all(Cli);
 static void change_cli_for_mon(Cli, Mon);
 static void deselect_cli(Cli);
-static void kill_client(Cli);
+static void kill_cli(Cli);
 static void focus(Mon);
 static void switch_client(SwitchDirection);
 static void switch_monitor(SwitchDirection);
@@ -223,6 +255,7 @@ static KeyCode mod_keys[] = {
     KEY_c,
     KEY_j,
     KEY_k,
+    KEY_l,
     KEY_p,
     KEY_q,
     KEY_r,
@@ -242,9 +275,10 @@ static Mon         selmon;
 static GC          black_gc;
 static GC          red_gc;
 static GC          blue_gc;
-static bool        mod     = false; // mod4
-static bool        shift   = false;
-static bool        running = false;
+static bool        mod          = false; // mod4
+static bool        shift        = false;
+static bool        running      = false;
+static bool        input_locked = false;
 static Cursor      cursor;
 
 int main() {
@@ -294,7 +328,7 @@ static void setup(void) {
     // | LeaveWindowMask | StructureNotifyMask | PropertyChangeMask;
 
     init_bars();
-    draw_bars();
+    draw_bars(&clients);
 }
 
 static void init_gcs(void) {
@@ -394,54 +428,80 @@ static void init_bars(void) {
     }
 }
 
-static void key_down(XEvent *e) {
-    switch (e->xkey.keycode) {
-        case KEY_1:
-        case KEY_2:
-        case KEY_3:
-        case KEY_4:
-        case KEY_5:
-        case KEY_6:
-        case KEY_7:
-        case KEY_8:
-        case KEY_9:
-            if (shift)
-                jump_mon(e->xkey.keycode - KEY_1 + 1);
-            else
-                jump_cli(e->xkey.keycode - KEY_1 + 1);
-            break;
-        case KEY_0:
-            if (shift)
-                jump_mon(0);
-            else
-                jump_cli(0);
-            break;
-        case KEY_c: kill_client(MON_CLI(selmon)); break;
-        case KEY_j:
-            if (shift)
-                switch_monitor(DOWN);
-            else
-                switch_client(DOWN);
-            break;
-        case KEY_k:
-            if (shift)
-                switch_monitor(UP);
-            else
-                switch_client(UP);
-            break;
-        case KEY_p: dmenu(); break;
-        case KEY_q: end(); break;
-        case KEY_r: restart(); break;
-        case KEY_MINUS: change_cli_for_mon(NONE, selmon); break;
-        case KEY_TAB:
-            if (shift)
-                jump_mon(prevmon);
-            else
-                change_cli_for_mon(MON_PREVCLI(selmon), selmon);
-            break;
-        case KEY_SHIFT: shift = true; break;
-        default: break;
+static void toggle_lock(void) {
+    input_locked = !input_locked;
+
+    if (input_locked) {
+        change_cli_for_all(NONE);
+        ClientList fake_list = {
+            .array    = NULL,
+            .count    = 0,
+            .capacity = 0,
+        };
+        draw_bars(&fake_list);
+    } else {
+        for (Mon cur = 0; cur < monitors.count; ++cur) change_cli_for_mon(MON_PREVCLI(cur), cur);
+        draw_bars(&clients);
     }
+}
+
+static void key_down(XEvent *e) {
+    if (e->xkey.keycode == KEY_l) toggle_lock();
+
+    if (!input_locked) switch (e->xkey.keycode) {
+            case KEY_1:
+            case KEY_2:
+            case KEY_3:
+            case KEY_4:
+            case KEY_5:
+            case KEY_6:
+            case KEY_7:
+            case KEY_8:
+            case KEY_9:
+                if (shift)
+                    jump_mon(e->xkey.keycode - KEY_1 + 1);
+                else
+                    jump_cli(e->xkey.keycode - KEY_1 + 1);
+                break;
+            case KEY_0:
+                if (shift)
+                    jump_mon(0);
+                else
+                    jump_cli(0);
+                break;
+            case KEY_c: kill_cli(MON_CLI(selmon)); break;
+            case KEY_j:
+                if (shift)
+                    switch_monitor(DOWN);
+                else
+                    switch_client(DOWN);
+                break;
+            case KEY_k:
+                if (shift)
+                    switch_monitor(UP);
+                else
+                    switch_client(UP);
+                break;
+            case KEY_p: dmenu(); break;
+            case KEY_q:
+                if (shift) end();
+                break;
+            case KEY_r: restart(); break;
+            case KEY_MINUS:
+                if (shift)
+                    change_cli_for_all(NONE);
+                else
+                    change_cli_for_mon(NONE, selmon);
+                break;
+            case KEY_TAB:
+                if (shift)
+                    jump_mon(prevmon);
+                else
+                    change_cli_for_mon(MON_PREVCLI(selmon), selmon);
+                break;
+            case KEY_SHIFT: shift = true; break;
+            default: break;
+        }
 }
 
 static void key_up(XEvent *e) {
@@ -469,7 +529,7 @@ static void map(XEvent *e) {
         Cli newcli = clients.count - 1;
         change_cli_for_mon(newcli, selmon);
 
-        draw_bars();
+        draw_bars(&clients);
     }
 }
 
@@ -523,11 +583,11 @@ static void expand_clients(void) {
     clients.array = new_array;
 }
 
-static void draw_bars(void) {
-    for (int i = 0; i < monitors.count; ++i) { draw_bar_on(i); }
+static void draw_bars(const ClientList *const clients) {
+    for (int i = 0; i < monitors.count; ++i) { draw_bar_on(i, clients); }
 }
 
-static void draw_bar_on(Mon mon) {
+static void draw_bar_on(Mon mon, const ClientList *const clients) {
     if (!mon_in_range(mon)) return;
     Monitor *m   = MONITOR(mon);
     Window   bar = m->bar;
@@ -537,8 +597,8 @@ static void draw_bar_on(Mon mon) {
     GC       bg;
     int      x;
 
-    fg  = gcs[selmon == mon ? SEL_FG : NRM_FG];
-    bg  = gcs[selmon == mon ? SEL_BG : NRM_BG];
+    fg  = gcs[selmon == mon && !input_locked ? SEL_FG : NRM_FG];
+    bg  = gcs[selmon == mon && !input_locked ? SEL_BG : NRM_BG];
     len = sprintf(num, "Monitor %d", mon);
 
     draw_filled_rectangle(bar, bg, 0, 0, m->w, BAR_H);
@@ -547,7 +607,7 @@ static void draw_bar_on(Mon mon) {
     // starts at -1 to mark when no clients selected
     // this has a big problem if the NONE constant is changed to something other than -1
     // needs to be fixed
-    for (Cli cli = -1; cli < clients.count; ++cli) {
+    for (Cli cli = -1; cli < clients->count; ++cli) {
         fg = gcs[m->cli == cli ? SEL_FG : NRM_FG];
         bg = gcs[m->cli == cli ? SEL_BG : NRM_BG];
         x  = (cli + 1) * (CELL_W + CELL_GAP);
@@ -587,7 +647,7 @@ static void try_remove_window(Window w) {
         } else
             ++i;
 
-    if (removed) draw_bars();
+    if (removed) draw_bars(&clients);
 }
 
 static Cli prev_cli(void) { return MONITOR(selmon)->prevcli; }
@@ -616,6 +676,11 @@ static void fit_cli_to_mon(Cli cli, Mon mon) {
     }
 }
 
+// this should probably just be changed to a function which hides all, but this currently will properly set prevcli
+static void change_cli_for_all(Cli cli) {
+    for (Mon cur = 0; cur < monitors.count; ++cur) change_cli_for_mon(cli, cur);
+}
+
 // select client displayed on selected monitor; -1 to select none
 static void change_cli_for_mon(Cli cli, Mon mon) {
     if (!MON_EXISTS(mon)) return;
@@ -629,12 +694,12 @@ static void change_cli_for_mon(Cli cli, Mon mon) {
 
     if (MON_EXISTS(prev_using_mon)) { // no need to map if was previously on a diff monitor
         MON_CLI(prev_using_mon) = NONE;
-        draw_bar_on(prev_using_mon);
+        draw_bar_on(prev_using_mon, &clients);
     } else if (CLI_EXISTS(cli))
         XMapWindow(dp, MON_WINDOW(mon));
 
     focus(mon);
-    draw_bar_on(mon);
+    draw_bar_on(mon, &clients);
 }
 
 static void deselect_cli(Cli cli) {
@@ -644,7 +709,7 @@ static void deselect_cli(Cli cli) {
 
 // I need to learn client messages eventually, but this is good for now
 // XKillClient destroys the client's resources so not the worst bad practice
-static void kill_client(Cli cli) {
+static void kill_cli(Cli cli) {
     XGrabServer(dp);
     XSetErrorHandler(dummy_error_handler);
     XSetCloseDownMode(dp, DestroyAll);
@@ -652,6 +717,8 @@ static void kill_client(Cli cli) {
     XSync(dp, False);
     XSetErrorHandler(error_handler);
     XUngrabServer(dp);
+
+    deselect_cli(cli);
 }
 
 // this breaks if NONE != -1, just for future reference
@@ -706,8 +773,8 @@ static void select_mon(Mon mon) {
     move_cursor(m->x + m->w / 2, m->y + m->h / 2);
     focus(selmon = mon);
 
-    draw_bar_on(prevmon);
-    draw_bar_on(selmon);
+    draw_bar_on(prevmon, &clients);
+    draw_bar_on(selmon, &clients);
 }
 
 static Mon mon_using_cli(Cli cli) {
