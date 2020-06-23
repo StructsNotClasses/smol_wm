@@ -1,12 +1,18 @@
 // Shitty Manager of cLients Window Manager (SMOLWM)
 //
-// issues:
+// issues //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // it segfaults when closing for some reason
 // it happens in XCloseDisplay I think
 // doesn't happen if no windows created
 // not that big a deal, since resources freed beforehand
 //
-// ideas:
+// when a client is removed, the previous client is not removed, nor is it moved based on the array deletion
+//
+// ideas ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// auto bar toggling, starting with a manual keybinding
+//
+// extension support (custom fpointers most probably)
+//
 // a keybinding which notifies date on the statusbar
 // I don't personally like having date on my desktop because I believe it limits intuition for time, but a temp
 // notification is no different from checking phone so it'd be cool
@@ -19,10 +25,12 @@
 //
 // color for clients not displayed
 //
-// dependencies:
-// X11, Xinerama, dmenu
+// definitely needs a preview mode
 //
-// keybindings:
+// dependencies ////////////////////////////////////////////////////////////////////////////////////////////////////
+// gcc, X11, Xinerama, dmenu
+//
+// keybindings /////////////////////////////////////////////////////////////////////////////////////////////////////
 // mod4 is the windows key on most keyboards by the way
 //
 // mod4 + p: run dmenu, allowing you to create a new client
@@ -42,6 +50,10 @@
 // mod4 + -: select none/deselect on current monitor
 //
 // mod4 + shift + -: select non/deselect on all monitors
+//
+// mod4 + c: close the selected client
+//
+// mod4 + b: toggle visibility of bar on the current monitor
 //
 // mod4 + l: toggles dummy mode. Deselects all clients and locks input, displaying fake empty bar. Press again to return
 // to selected clients.
@@ -135,6 +147,7 @@ enum {
     KEY_l     = 46,
     KEY_SHIFT = 50,
     KEY_c     = 54,
+    KEY_b     = 56,
     KEY_MOD4  = 133,
 };
 
@@ -166,6 +179,7 @@ struct Monitor {
     Cli    cli;
     Cli    prevcli;
     Window bar;
+    bool   bar_visible;
 };
 
 struct MonitorList {
@@ -227,6 +241,7 @@ static void free_clients(void);
 static int  dummy_error_handler(Display *, XErrorEvent *);
 static int  error_handler(Display *, XErrorEvent *);
 static void move_cursor(int, int);
+static void replace_cli(Cli, Cli);
 
 static EventHandler handle_event[LASTEvent] = {
     [FocusIn]       = focus_in,
@@ -242,24 +257,8 @@ static KeyCode keys[] = {
 };
 
 static KeyCode mod_keys[] = {
-    KEY_1,
-    KEY_2,
-    KEY_3,
-    KEY_4,
-    KEY_5,
-    KEY_6,
-    KEY_7,
-    KEY_8,
-    KEY_9,
-    KEY_0,
-    KEY_c,
-    KEY_j,
-    KEY_k,
-    KEY_l,
-    KEY_p,
-    KEY_q,
-    KEY_r,
-    KEY_SHIFT,
+    KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8,     KEY_9, KEY_0,
+    KEY_c, KEY_j, KEY_k, KEY_l, KEY_p, KEY_q, KEY_r, KEY_SHIFT, KEY_b,
 };
 
 static GC gcs[GC_LAST_TYPE];
@@ -293,6 +292,8 @@ int main() {
 }
 
 static void setup(void) {
+    XSetErrorHandler(error_handler);
+
     if ((dp = XOpenDisplay(NULL)) == NULL) {
         fprintf(stderr, "failed to open display %s!\n", XDisplayString(dp));
         exit(1);
@@ -388,12 +389,13 @@ static void init_monitors(void) {
     // move monitors into array
     for (int count = 0; count < monitors.count; ++count)
         monitors.array[count] = (Monitor){
-            .x       = screen_info[count].x_org,
-            .y       = screen_info[count].y_org,
-            .w       = screen_info[count].width,
-            .h       = screen_info[count].height,
-            .cli     = NONE,
-            .prevcli = NONE,
+            .x           = screen_info[count].x_org,
+            .y           = screen_info[count].y_org,
+            .w           = screen_info[count].width,
+            .h           = screen_info[count].height,
+            .cli         = NONE,
+            .prevcli     = NONE,
+            .bar_visible = true,
         };
     // sort array by x vals
     // not the cleanest algo; but come on, it runs once
@@ -445,6 +447,16 @@ static void toggle_lock(void) {
     }
 }
 
+static void toggle_bar(Mon mon) {
+    Monitor *m     = MONITOR(mon);
+    m->bar_visible = !m->bar_visible;
+
+    if (m->bar_visible)
+        XMapWindow(dp, m->bar);
+    else
+        XUnmapWindow(dp, m->bar);
+}
+
 static void key_down(XEvent *e) {
     if (e->xkey.keycode == KEY_l) toggle_lock();
 
@@ -469,6 +481,7 @@ static void key_down(XEvent *e) {
                 else
                     jump_cli(0);
                 break;
+            case KEY_b: toggle_bar(selmon); break;
             case KEY_c: kill_cli(MON_CLI(selmon)); break;
             case KEY_j:
                 if (shift)
@@ -617,6 +630,8 @@ static void draw_bar_on(Mon mon, const ClientList *const clients) {
         len = sprintf(num, "%d", cli);
         XDrawString(dp, bar, fg, x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
     }
+
+    if (!m->bar_visible) XUnmapWindow(dp, m->bar);
 }
 
 static void draw_filled_rectangle(Drawable d, GC gc, int x, int y, int w, int h) {
@@ -659,7 +674,10 @@ static void delete_cli(Cli cli) {
     --clients.count;
 
     // shift items back one, overwriting cli
-    for (Cli cur = cli; cur < clients.count; ++cur) clients.array[cur] = clients.array[cur + 1];
+    for (Cli cur = cli; cur < clients.count; ++cur) {
+        clients.array[cur] = clients.array[cur + 1];
+        replace_cli(cur + 1, cur);
+    }
 }
 
 static void clear_mon(Mon mon) {
@@ -703,8 +721,10 @@ static void change_cli_for_mon(Cli cli, Mon mon) {
 }
 
 static void deselect_cli(Cli cli) {
-    for (Mon curmon = 0; curmon < monitors.count; ++curmon)
+    for (Mon curmon = 0; curmon < monitors.count; ++curmon) {
         if (MON_CLI(curmon) == cli) MON_CLI(curmon) = NONE;
+        if (MON_PREVCLI(curmon) == cli) MON_PREVCLI(curmon) = NONE;
+    }
 }
 
 // I need to learn client messages eventually, but this is good for now
@@ -808,14 +828,14 @@ static void end(void) {
 }
 
 static void free_clients(void) {
-    for (int i = 0; i < clients.count; ++i) XDestroyWindow(dp, clients.array[i].window);
+    for (Cli cli = 0; cli < clients.count; ++cli) kill_cli(cli);
     free(clients.array);
     clients.count = clients.capacity = 0;
 }
 
 static int dummy_error_handler(Display *d, XErrorEvent *e) { return 0; }
 
-// basically dwm code
+// got this from dwm btw, credit to them
 static int error_handler(Display *d, XErrorEvent *ee) {
     if (ee->error_code == BadWindow) return 0;
     fprintf(stderr, "fatal error: request code=%d, error code=%d\n", ee->request_code, ee->error_code);
@@ -852,4 +872,9 @@ static void move_cursor(int x, int y) {
     XUngrabPointer(dp, CurrentTime);
 }
 
-#undef PRINT_XINERAMA_MONITOR
+static void replace_cli(Cli old, Cli new) {
+    for (Mon mon = 0; mon < monitors.count; ++mon) {
+        if (MON_CLI(mon) == old) MON_CLI(mon) = new;
+        if (MON_PREVCLI(mon) == old) MON_PREVCLI(mon) = new;
+    }
+}
