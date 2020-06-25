@@ -4,292 +4,6 @@ Pins up-to-date!
 Steam client's requirements are satisfied
 /home/pugpugpugs/.local/share/Steam/ubuntu12_32/steam
 STEAM_RUNTIME_HEAVY: ./steam-runtime-heavy
-Found path: /home/pugpugpugs/.local/share/Steam/steamapps/common/Enter the Gungeon/EtG.x86_64
-Mono path[0] = '/home/pugpugpugs/.local/share/Steam/steamapps/common/Enter the Gungeon/EtG_Data/Managed'
-Mono config path = '/home/pugpugpugs/.local/share/Steam/steamapps/common/Enter the Gungeon/EtG_Data/Mono/etc'
-Preloaded 'ScreenSelector.so'
-Preloaded 'libAkFlanger.so'
-Preloaded 'libAkGuitarDistortion.so'
-Preloaded 'libAkHarmonizer.so'
-Preloaded 'libAkSoundEngine.so'
-Preloaded 'libAkStereoDelay.so'
-Preloaded 'libAkTremolo.so'
-Preloaded 'libCSteamworks.so'
-Preloaded 'libsteam_api.so'
-Unable to preload the following plugins:
-	ScreenSelector.so
-	libAkFlanger.so
-	libAkGuitarDistortion.so
-	libAkHarmonizer.so
-	libAkSoundEngine.so
-	libAkStereoDelay.so
-	libAkTremolo.so
-	libCSteamworks.so
-	libsteam_api.so
-Logging to /home/pugpugpugs/.config/unity3d/Dodge Roll/Enter the Gungeon/Player.log
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-Entering a window
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing fRunning Steam on arch rolling 64-bit
-STEAM_RUNTIME is enabled automatically
-Pins up-to-date!
-Steam client's requirements are satisfied
-/home/pugpugpugs/.local/share/Steam/ubuntu12_32/steam
-STEAM_RUNTIME_HEAVY: ./steam-runtime-heavy
 SDL video target is 'x11'
 SDL failed to create GL compatibility profile (whichProfile=0!
 This system supports the OpenGL extension GL_EXT_framebuffer_object.
@@ -354,265 +68,7 @@ RESZ NOT SUPPORTED!
 INTZ NOT SUPPORTED!
 
  ##### swap interval = 0     swap limit = 1 #####
-ocus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-Entering a window
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-Entering a window
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-Entering a window
-Entering a window
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-changing focus
-changing focus
-changing focus
-Entering a window
-changing focus
-chCGLMShaderPair::SetProgramPair: Centroid masks differ at link time of vertex shader screenspaceeffect_vs30 and pixel shader underwater_ps30!
+CGLMShaderPair::SetProgramPair: Centroid masks differ at link time of vertex shader screenspaceeffect_vs30 and pixel shader underwater_ps30!
 Filesystem successfully switched to safe whitelist mode
  failed to dlopen /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/bin/matchmaking_client.so error=/home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/bin/matchmaking_client.so: wrong ELF class: ELFCLASS32
  failed to dlopen /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/bin/client_client.so error=/home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/bin/client_client.so: wrong ELF class: ELFCLASS32
@@ -638,13 +94,13 @@ GameTypes: missing mapgroupsSP entry for game type/mode (cooperative/coopmission
 SV_ShutdownGameDLL
 Reference Count for Material __background (1) != 0
 Reference Count for Material __particlesdepthwrite (1) != 0
-Reference Count for Material ui_itempreview_fullscreen__rt_fullframefb2 (21) != 0
-Reference Count for Material ui_itempreview_fxaa (21) != 0
-Reference Count for Material ui_itempreview_softshadow_floor (21) != 0
-Reference Count for Material ui_itempreview_softshadow_blob (21) != 0
-Reference Count for Material ui_itempreview_softshadow_downsample (21) != 0
-Reference Count for Material ui_itempreview_softshadow_blur_x (21) != 0
-Reference Count for Material ui_itempreview_softshadow_blur_y (21) != 0
+Reference Count for Material ui_itempreview_fullscreen__rt_fullframefb2 (1) != 0
+Reference Count for Material ui_itempreview_fxaa (1) != 0
+Reference Count for Material ui_itempreview_softshadow_floor (1) != 0
+Reference Count for Material ui_itempreview_softshadow_blob (1) != 0
+Reference Count for Material ui_itempreview_softshadow_downsample (1) != 0
+Reference Count for Material ui_itempreview_softshadow_blur_x (1) != 0
+Reference Count for Material ui_itempreview_softshadow_blur_y (1) != 0
 Reference Count for Material panorama0 (1) != 0
 Reference Count for Material panoramafancy0 (1) != 0
 Reference Count for Material panorama1 (1) != 0
@@ -663,23 +119,10 @@ Reference Count for Material panorama7 (1) != 0
 Reference Count for Material panoramafancy7 (1) != 0
 Reference Count for Material panorama8 (1) != 0
 Reference Count for Material panoramafancy8 (1) != 0
-Reference Count for Material sticker_pist_deagle_decal_c_shattered_web/mastermind_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_snip_awp_decal_a_standard/fearsome_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_snip_awp_decal_b_cologne2014/hellraisers_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_snip_awp_decal_c_standard/aces_high_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_snip_awp_decal_d_cs20/cs20_rush_holo_44268_3rd (1) != 0
 Reference Count for Material __utilwireframe (2) != 0
-Reference Count for Material __utilwireframeignorez (3) != 0
+Reference Count for Material __utilwireframeignorez (2) != 0
 Reference Count for Material __utilvertexcolor (2) != 0
-Reference Count for Material __utilvertexcolorignorez (3) != 0
-Reference Count for Material sticker_pist_deagle_decal_a_shattered_web/web_stuck_44268_3rd (1) != 0
-Reference Count for Material sticker_pist_deagle_decal_b_shattered_web/mastermind_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_pist_deagle_decal_c_shattered_web/web_stuck_44268_3rd (1) != 0
-Reference Count for Material sticker_rif_m4a1_decal_c_cs20/cs20_2old_glossy_44268_3rd (1) != 0
-Reference Count for Material sticker_rif_m4a1_decal_d_feral_predators/one_sting_holo_44268_1st (1) != 0
-Reference Count for Material sticker_rif_m4a1_decal_d_feral_predators/one_sting_holo_44268_3rd (1) != 0
-Reference Count for Material sticker_rif_ak47_decal_d_community02/drugwarveteran_44268_1st (1) != 0
-Reference Count for Material sticker_rif_ak47_decal_d_community02/drugwarveteran_44268_3rd (1) != 0
+Reference Count for Material __utilvertexcolorignorez (2) != 0
 Reference Count for Material particle/headshot/headshot (5) != 0
 Reference Count for Material particle/pebble1/particle_pebble_1 (2) != 0
 Reference Count for Material particle/spray1/spray1 (15) != 0
@@ -790,29 +233,14 @@ Reference Count for Material particle/playerping/playerping_ring (2) != 0
 Reference Count for Material vgui/hud/icon_arrow_down (1) != 0
 Reference Count for Material particle/muzzleflash/noisecloud1 (5) != 0
 Reference Count for Material engine/writez (1) != 0
-Reference Count for Material effects/muzzleflash4 (1) != 0
-Reference Count for Material effects/muzzleflash2 (1) != 0
 Reference Count for Material engine/preloadtexture (1) != 0
 Reference Count for Material cable/rope_shadowdepth (1) != 0
-Reference Count for Material effects/muzzleflash1 (1) != 0
-Reference Count for Material effects/muzzleflash3 (1) != 0
-Reference Count for Material effects/fleck_glass1 (1) != 0
-Reference Count for Material effects/fleck_glass2 (1) != 0
-Reference Count for Material effects/fleck_tile1 (1) != 0
-Reference Count for Material effects/fleck_tile2 (1) != 0
-Reference Count for Material effects/fleck_wood1 (1) != 0
-Reference Count for Material effects/fleck_wood2 (1) != 0
-Reference Count for Material effects/fleck_antlion1 (1) != 0
-Reference Count for Material effects/fleck_antlion2 (1) != 0
-Reference Count for Material particle/particle_noisesphere (1) != 0
-Reference Count for Material effects/blood (1) != 0
-Reference Count for Material effects/blood2 (1) != 0
 Reference Count for Material dev/player_visibility (1) != 0
 Reference Count for Material engine/writestencil (1) != 0
 Reference Count for Material dev/replay (1) != 0
 Reference Count for Material ___error (2) != 0
-Leaking 1833 vertex shaders
-Leaking 7202 pixel shaders
+Leaking 1805 vertex shaders
+Leaking 7198 pixel shaders
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_013.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_013.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_016.vpk was never closed
@@ -887,10 +315,10 @@ File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global 
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_120.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_102.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_102.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_043.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_043.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_047.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_047.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_043.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_043.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_108.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_108.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_079.vpk was never closed
@@ -975,77 +403,49 @@ File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global 
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_052.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_119.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_119.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_029.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_029.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_048.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_048.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_058.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_058.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_030.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_030.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_026.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_026.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_085.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_085.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_020.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_020.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_023.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_023.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_012.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_012.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_014.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_014.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_018.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_018.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_024.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_024.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_122.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_122.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_009.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_009.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_037.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_037.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_019.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_019.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_112.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_112.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_045.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_045.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_035.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_035.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_044.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_044.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_017.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_017.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_025.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_025.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_124.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_124.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_121.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_121.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_039.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_039.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_036.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_036.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_027.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_027.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_107.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_107.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_038.vpk was never closed
 File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_038.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_031.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_031.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_061.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_061.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_097.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_097.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_125.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_125.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_042.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_042.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_022.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_022.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_123.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_123.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_103.vpk was never closed
-File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_103.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_048.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_048.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_036.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_036.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_019.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_019.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_085.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_085.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_023.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_023.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_026.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_026.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_037.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_037.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_009.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_009.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_020.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_020.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_112.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_112.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_044.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_044.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_039.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_039.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_122.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_122.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_124.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_124.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_029.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_029.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_012.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_012.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_027.vpk was never closed
+File /home/pugpugpugs/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/pak01_027.vpk was never closed
+Running Steam on arch rolling 64-bit
+STEAM_RUNTIME is enabled automatically
+Pins up-to-date!
+Steam client's requirements are satisfied
+/home/pugpugpugs/.local/share/Steam/ubuntu12_32/steam
+STEAM_RUNTIME_HEAVY: ./steam-runtime-heavy

@@ -126,7 +126,7 @@ typedef struct Client        Client;
 typedef struct ClientList    ClientList;
 typedef void (*EventHandler)(XEvent *);
 
-enum {
+enum Key {
     KEY_1     = 10,
     KEY_2     = 11,
     KEY_3     = 12,
@@ -205,11 +205,15 @@ static void init_bars(void);
 static void key_down(XEvent *);
 static void key_up(XEvent *);
 static void map(XEvent *);
+static void unmap(XEvent *);
 static void focus_in(XEvent *);
 static void enter(XEvent *);
 static void destroy(XEvent *);
 static void nothing(XEvent *);
 static void dmenu(void);
+static void toggle_lock(void);
+static void fit_bar(Monitor *);
+static void toggle_bar(Mon);
 static void draw_bars(const ClientList *const);
 static void draw_bar_on(Mon mon, const ClientList *const);
 static void draw_filled_rectangle(Drawable, GC, int, int, int, int);
@@ -261,8 +265,7 @@ static KeyCode mod_keys[] = {
     KEY_c, KEY_j, KEY_k, KEY_l, KEY_p, KEY_q, KEY_r, KEY_SHIFT, KEY_b,
 };
 
-static GC gcs[GC_LAST_TYPE];
-
+static GC          gcs[GC_LAST_TYPE];
 static MonitorList monitors;
 static ClientList  clients;
 static Display *   dp;   // display pointer
@@ -373,7 +376,7 @@ static void init_clients(void) {
 
 static void init_monitors(void) {
     if (!XineramaIsActive(dp)) {
-        fprintf(stderr, "please use xinerama, I'm too mentally disabled to add support. quitting...\n");
+        fprintf(stderr, "please use xinerama. quitting...\n");
         exit(1);
     }
 
@@ -428,33 +431,6 @@ static void init_bars(void) {
                                                     COL_NRM_BG);
         XMapWindow(dp, monitors.array[i].bar);
     }
-}
-
-static void toggle_lock(void) {
-    input_locked = !input_locked;
-
-    if (input_locked) {
-        change_cli_for_all(NONE);
-        ClientList fake_list = {
-            .array    = NULL,
-            .count    = 0,
-            .capacity = 0,
-        };
-        draw_bars(&fake_list);
-    } else {
-        for (Mon cur = 0; cur < monitors.count; ++cur) change_cli_for_mon(MON_PREVCLI(cur), cur);
-        draw_bars(&clients);
-    }
-}
-
-static void toggle_bar(Mon mon) {
-    Monitor *m     = MONITOR(mon);
-    m->bar_visible = !m->bar_visible;
-
-    if (m->bar_visible)
-        XMapWindow(dp, m->bar);
-    else
-        XUnmapWindow(dp, m->bar);
 }
 
 static void key_down(XEvent *e) {
@@ -572,6 +548,36 @@ static void dmenu(void) {
     }
 }
 
+static void toggle_lock(void) {
+    input_locked = !input_locked;
+
+    if (input_locked) {
+        change_cli_for_all(NONE);
+        ClientList fake_list = {
+            .array    = NULL,
+            .count    = 0,
+            .capacity = 0,
+        };
+        draw_bars(&fake_list);
+    } else {
+        for (Mon cur = 0; cur < monitors.count; ++cur) change_cli_for_mon(MON_PREVCLI(cur), cur);
+        draw_bars(&clients);
+    }
+}
+
+static void fit_bar(Monitor *m) { XMoveResizeWindow(dp, m->bar, m->x, m->y, m->w, BAR_H); }
+
+static void toggle_bar(Mon mon) {
+    Monitor *m     = MONITOR(mon);
+    m->bar_visible = !m->bar_visible;
+
+    if (m->bar_visible) {
+        fit_bar(m);
+        draw_bar_on(mon, &clients);
+    } else
+        XResizeWindow(dp, m->bar, 1, 1);
+}
+
 static void append_client(Window w) {
     if (clients.count >= CLIENT_MAX) {
         fprintf(stderr,
@@ -597,18 +603,21 @@ static void expand_clients(void) {
 }
 
 static void draw_bars(const ClientList *const clients) {
-    for (int i = 0; i < monitors.count; ++i) { draw_bar_on(i, clients); }
+    for (Mon mon = 0; mon < monitors.count; ++mon) { draw_bar_on(mon, clients); }
 }
 
 static void draw_bar_on(Mon mon, const ClientList *const clients) {
     if (!mon_in_range(mon)) return;
-    Monitor *m   = MONITOR(mon);
-    Window   bar = m->bar;
-    char     num[12];
-    int      len;
-    GC       fg;
-    GC       bg;
-    int      x;
+
+    Monitor *m = MONITOR(mon);
+    if (!m->bar_visible) return;
+
+    Window bar = m->bar;
+    char   num[12];
+    int    len;
+    GC     fg;
+    GC     bg;
+    int    x;
 
     fg  = gcs[selmon == mon && !input_locked ? SEL_FG : NRM_FG];
     bg  = gcs[selmon == mon && !input_locked ? SEL_BG : NRM_BG];
@@ -630,8 +639,6 @@ static void draw_bar_on(Mon mon, const ClientList *const clients) {
         len = sprintf(num, "%d", cli);
         XDrawString(dp, bar, fg, x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
     }
-
-    if (!m->bar_visible) XUnmapWindow(dp, m->bar);
 }
 
 static void draw_filled_rectangle(Drawable d, GC gc, int x, int y, int w, int h) {
