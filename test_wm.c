@@ -6,10 +6,10 @@
 // doesn't happen if no windows created
 // not that big a deal, since resources freed beforehand
 //
-// when a client is removed, the previous client is not removed, nor is it moved based on the array deletion
+// if I move to monitor 3 then create a new client, the new client is placed on monitor two and that on monitor three
+// remains
 //
 // ideas ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-// auto bar toggling, starting with a manual keybinding
 //
 // extension support (custom fpointers most probably)
 //
@@ -26,6 +26,10 @@
 // color for clients not displayed
 //
 // definitely needs a preview mode
+// rather than what I'd thought of, preview mode could just be a way to jump to different monitors if the client were
+// displayed there rather than moving it
+// probably shouldn't actually select the monitor
+// just do some dummy selection thing that draws a new color in the bar
 //
 // dependencies ////////////////////////////////////////////////////////////////////////////////////////////////////
 // gcc, X11, Xinerama, dmenu
@@ -52,6 +56,8 @@
 // mod4 + shift + -: select non/deselect on all monitors
 //
 // mod4 + c: close the selected client
+//
+// mod4 + space: cycle mode of current monitor
 //
 // mod4 + b: toggle visibility of bar on the current monitor
 //
@@ -84,6 +90,11 @@
 // not implemented yet
 #define COL_HID_FG BLUE  // hidden foreground
 #define COL_HID_BG BLACK // hidden background
+
+#define MODE_SEL_ICON      "[]"
+#define MODE_SEL_ICON_LEN  2
+#define MODE_SAFE_ICON     "[[]]"
+#define MODE_SAFE_ICON_LEN 4
 
 #define BAR_H                15
 #define CHAR_H               10
@@ -120,6 +131,7 @@ typedef int                  Cli;
 typedef int                  Mon;
 typedef enum GCType          GCType;
 typedef enum SwitchDirection SwitchDirection;
+typedef enum MonitorMode     MonitorMode;
 typedef struct Monitor       Monitor;
 typedef struct MonitorList   MonitorList;
 typedef struct Client        Client;
@@ -148,6 +160,7 @@ enum Key {
     KEY_SHIFT = 50,
     KEY_c     = 54,
     KEY_b     = 56,
+    KEY_SPACE = 65,
     KEY_MOD4  = 133,
 };
 
@@ -166,20 +179,27 @@ enum SwitchDirection {
     UP,
 };
 
+enum MonitorMode {
+    MODE_SEL,
+    MODE_SAFE,
+    MODE_LAST, // used to determine number of modes
+};
+
 typedef struct {
     KeyCode      code;
     unsigned int modifier;
 } Key;
 
 struct Monitor {
-    short  x;
-    short  y;
-    short  w;
-    short  h;
-    Cli    cli;
-    Cli    prevcli;
-    Window bar;
-    bool   bar_visible;
+    short       x;
+    short       y;
+    short       w;
+    short       h;
+    Cli         cli;
+    Cli         prevcli;
+    Window      bar;
+    bool        bar_visible;
+    MonitorMode mode;
 };
 
 struct MonitorList {
@@ -205,6 +225,7 @@ static void init_bars(void);
 static void key_down(XEvent *);
 static void key_up(XEvent *);
 static void map(XEvent *);
+static void create(XEvent *);
 static void unmap(XEvent *);
 static void focus_in(XEvent *);
 static void enter(XEvent *);
@@ -225,6 +246,8 @@ static void append_client(Window);
 static void try_remove_window(Window);
 static Cli  prev_cli(void);
 static void delete_cli(Cli);
+static void clear_mon(Mon);
+static void fit_cli_to_mon(Cli, Mon);
 static void change_cli_for_all(Cli);
 static void change_cli_for_mon(Cli, Mon);
 static void deselect_cli(Cli);
@@ -232,6 +255,7 @@ static void kill_cli(Cli);
 static void focus(Mon);
 static void switch_client(SwitchDirection);
 static void switch_monitor(SwitchDirection);
+static void switch_mode(SwitchDirection);
 static void jump_cli(Cli);
 static void jump_mon(Mon);
 static void swap_clients(int, int);
@@ -248,11 +272,12 @@ static void move_cursor(int, int);
 static void replace_cli(Cli, Cli);
 
 static EventHandler handle_event[LASTEvent] = {
-    [FocusIn]       = focus_in,
-    [EnterNotify]   = enter,
-    [KeyPress]      = key_down,
-    [KeyRelease]    = key_up,
-    [MapRequest]    = map,
+    [FocusIn]     = focus_in,
+    [EnterNotify] = enter,
+    [KeyPress]    = key_down,
+    [KeyRelease]  = key_up,
+    [MapRequest]  = map,
+    //[CreateNotify]  = create,
     [DestroyNotify] = destroy,
 };
 
@@ -261,8 +286,8 @@ static KeyCode keys[] = {
 };
 
 static KeyCode mod_keys[] = {
-    KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8,     KEY_9, KEY_0,
-    KEY_c, KEY_j, KEY_k, KEY_l, KEY_p, KEY_q, KEY_r, KEY_SHIFT, KEY_b,
+    KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,     KEY_0,
+    KEY_c, KEY_j, KEY_k, KEY_l, KEY_p, KEY_q, KEY_r, KEY_b, KEY_SHIFT,
 };
 
 static GC          gcs[GC_LAST_TYPE];
@@ -277,10 +302,10 @@ static Mon         selmon;
 static GC          black_gc;
 static GC          red_gc;
 static GC          blue_gc;
-static bool        mod          = false; // mod4
-static bool        shift        = false;
-static bool        running      = false;
-static bool        input_locked = false;
+static bool        mod     = false; // mod4
+static bool        shift   = false;
+static bool        running = false;
+static bool        locked  = false;
 static Cursor      cursor;
 
 int main() {
@@ -399,6 +424,7 @@ static void init_monitors(void) {
             .cli         = NONE,
             .prevcli     = NONE,
             .bar_visible = true,
+            .mode        = MODE_SEL,
         };
     // sort array by x vals
     // not the cleanest algo; but come on, it runs once
@@ -436,7 +462,7 @@ static void init_bars(void) {
 static void key_down(XEvent *e) {
     if (e->xkey.keycode == KEY_l) toggle_lock();
 
-    if (!input_locked) switch (e->xkey.keycode) {
+    if (!locked) switch (e->xkey.keycode) {
             case KEY_1:
             case KEY_2:
             case KEY_3:
@@ -482,6 +508,12 @@ static void key_down(XEvent *e) {
                 else
                     change_cli_for_mon(NONE, selmon);
                 break;
+            case KEY_SPACE:
+                if (shift)
+                    switch_mode(DOWN);
+                else
+                    switch_mode(UP);
+                break;
             case KEY_TAB:
                 if (shift)
                     jump_mon(prevmon);
@@ -500,26 +532,44 @@ static void key_up(XEvent *e) {
     }
 }
 
-// runs whenever a window is made visible, which is the cue to start managing it
-// I don't see why a wm would manage invisible/unmapped windows anyway
-static void map(XEvent *e) {
-    XMapRequestEvent request = e->xmaprequest;
-
+static void new_window(Window w) {
     // is it a good idea to map any window that makes a request while in clientlist?
-    if (request.parent != root || in_client_list(request.window))
-        XMapWindow(dp, request.window);
-    else {
-        Mon openmon = open_mon();
-        if (MON_EXISTS(openmon) && CLI_EXISTS(MON_CLI(selmon)))
-            // needs fixing b/c redundant focus in select_mon
-            select_mon(openmon);
+    Mon openmon = open_mon();
+    if (CLI_EXISTS(MON_CLI(selmon)) && MON_EXISTS(openmon))
+        // needs fixing b/c redundant focus in select_mon
+        select_mon(openmon);
 
-        append_client(request.window);
+    append_client(w);
+
+    if (!locked) {
         Cli newcli = clients.count - 1;
         change_cli_for_mon(newcli, selmon);
 
         draw_bars(&clients);
     }
+}
+
+// runs whenever a window is made visible, which is the cue to start managing it
+// I don't see why a wm would manage invisible/unmapped windows anyway
+static void map(XEvent *e) {
+    XMapRequestEvent request = e->xmaprequest;
+
+    if (request.parent != root || in_client_list(request.window))
+        XMapWindow(dp, request.window);
+    else
+        new_window(request.window);
+}
+
+static bool is_monitor_bar(Window w) {
+    for (Monitor *m = monitors.array; m < monitors.array + monitors.count; ++m)
+        if (m->bar == w) return true;
+    return false;
+}
+
+static void create(XEvent *e) {
+    XCreateWindowEvent create_event = e->xcreatewindow;
+    if (create_event.parent == root && !in_client_list(create_event.window) && !is_monitor_bar(create_event.window))
+        new_window(create_event.window);
 }
 
 static void destroy(XEvent *e) {
@@ -549,9 +599,9 @@ static void dmenu(void) {
 }
 
 static void toggle_lock(void) {
-    input_locked = !input_locked;
+    locked = !locked;
 
-    if (input_locked) {
+    if (locked) {
         change_cli_for_all(NONE);
         ClientList fake_list = {
             .array    = NULL,
@@ -576,6 +626,7 @@ static void toggle_bar(Mon mon) {
         draw_bar_on(mon, &clients);
     } else
         XResizeWindow(dp, m->bar, 1, 1);
+    fit_cli_to_mon(m->cli, mon);
 }
 
 static void append_client(Window w) {
@@ -606,6 +657,41 @@ static void draw_bars(const ClientList *const clients) {
     for (Mon mon = 0; mon < monitors.count; ++mon) { draw_bar_on(mon, clients); }
 }
 
+static GC bar_fg_col(Mon mon) { return gcs[selmon == mon && !locked ? SEL_FG : NRM_FG]; }
+
+static GC bar_bg_col(Mon mon) { return gcs[selmon == mon && !locked ? SEL_BG : NRM_BG]; }
+
+static GC cli_fg_col(Monitor *m, Cli cli) { return gcs[m->cli == cli ? SEL_FG : NRM_FG]; }
+
+static GC cli_bg_col(Monitor *m, Cli cli) { return gcs[m->cli == cli ? SEL_BG : NRM_BG]; }
+
+static void draw_monitor_number(const Monitor *const m, const char *const str, int len) {
+    XDrawString(dp, m->bar, bar_fg_col(MON(m)), m->w - len * 10, BAR_H / 2 + CHAR_H / 2, str, len);
+}
+
+static void draw_monitor_mode(Monitor *m, int offset) {
+    switch (m->mode) {
+        case MODE_SEL:
+            XDrawString(dp,
+                        m->bar,
+                        bar_fg_col(MON(m)),
+                        m->w - offset - MODE_SEL_ICON_LEN * 10,
+                        BAR_H / 2 + CHAR_H / 2,
+                        MODE_SEL_ICON,
+                        MODE_SEL_ICON_LEN);
+            break;
+        case MODE_SAFE:
+            XDrawString(dp,
+                        m->bar,
+                        bar_fg_col(MON(m)),
+                        m->w - offset - MODE_SAFE_ICON_LEN * 10,
+                        BAR_H / 2 + CHAR_H / 2,
+                        MODE_SAFE_ICON,
+                        MODE_SAFE_ICON_LEN);
+            break;
+    }
+}
+
 static void draw_bar_on(Mon mon, const ClientList *const clients) {
     if (!mon_in_range(mon)) return;
 
@@ -619,25 +705,22 @@ static void draw_bar_on(Mon mon, const ClientList *const clients) {
     GC     bg;
     int    x;
 
-    fg  = gcs[selmon == mon && !input_locked ? SEL_FG : NRM_FG];
-    bg  = gcs[selmon == mon && !input_locked ? SEL_BG : NRM_BG];
     len = sprintf(num, "Monitor %d", mon);
 
-    draw_filled_rectangle(bar, bg, 0, 0, m->w, BAR_H);
-    XDrawString(dp, bar, fg, m->w - len * 10, BAR_H / 2 + CHAR_H / 2, num, len);
+    draw_filled_rectangle(bar, bar_bg_col(mon), 0, 0, m->w, BAR_H);
+    draw_monitor_number(m, num, len);
+    draw_monitor_mode(m, len * 10);
 
     // starts at -1 to mark when no clients selected
     // this has a big problem if the NONE constant is changed to something other than -1
     // needs to be fixed
     for (Cli cli = -1; cli < clients->count; ++cli) {
-        fg = gcs[m->cli == cli ? SEL_FG : NRM_FG];
-        bg = gcs[m->cli == cli ? SEL_BG : NRM_BG];
-        x  = (cli + 1) * (CELL_W + CELL_GAP);
+        x = (cli + 1) * (CELL_W + CELL_GAP);
 
-        draw_filled_rectangle(bar, bg, x, 0, CELL_W, BAR_H);
+        draw_filled_rectangle(bar, cli_bg_col(m, cli), x, 0, CELL_W, BAR_H);
 
         len = sprintf(num, "%d", cli);
-        XDrawString(dp, bar, fg, x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
+        XDrawString(dp, bar, cli_fg_col(m, cli), x + (CELL_W / 2 - CHAR_W * len / 2), BAR_H / 2 + CHAR_H / 2, num, len);
     }
 }
 
@@ -653,9 +736,9 @@ static bool in_client_list(Window w) {
 }
 
 static Mon open_mon(void) {
-    for (int mon = 0; mon < monitors.count; ++mon)
-        if (MON_CLI(mon) == NONE) return mon;
-    return -1;
+    for (Mon mon = 0; mon < monitors.count; ++mon)
+        if (!CLI_EXISTS(MON_CLI(mon))) return mon;
+    return NONE;
 }
 
 static void try_remove_window(Window w) {
@@ -691,13 +774,17 @@ static void clear_mon(Mon mon) {
     if (CLI_EXISTS(MON_CLI(mon))) {
         XUnmapWindow(dp, MON_WINDOW(mon));
         MON_CLI(mon) = NONE;
+        draw_bar_on(mon, &clients);
     }
 }
 
 static void fit_cli_to_mon(Cli cli, Mon mon) {
     if (CLI_EXISTS(cli)) {
         Monitor *m = MONITOR(mon);
-        XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
+        if (m->bar_visible)
+            XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y + BAR_H, m->w, m->h - BAR_H);
+        else
+            XMoveResizeWindow(dp, CLI_WINDOW(cli), m->x, m->y, m->w, m->h);
     }
 }
 
@@ -790,6 +877,17 @@ static void switch_monitor(SwitchDirection direction) {
         case DOWN: select_mon(wrap_mon(selmon - 1)); break;
         case UP: select_mon(wrap_mon(selmon + 1)); break;
     }
+}
+
+static MonitorMode wrap_mode(MonitorMode mode) { return abs(mode) % MODE_LAST; }
+
+static void switch_mode(SwitchDirection direction) {
+    Monitor *m = MONITOR(selmon);
+    switch (direction) {
+        case DOWN: m->mode = wrap_mode(m->mode - 1); break;
+        case UP: m->mode = wrap_mode(m->mode + 1); break;
+    }
+    draw_bar_on(selmon, &clients);
 }
 
 static void select_mon(Mon mon) {
