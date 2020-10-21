@@ -1,10 +1,6 @@
-// Shitty Manager of cLients Window Manager (SMOLWM)
+// Small Manager of cLients Window Manager (SMOLWM)
 //
 // issues //////////////////////////////////////////////////////////////////////////////////////////////////////////
-// it segfaults when closing for some reason
-// it happens in XCloseDisplay I think
-// doesn't happen if no windows created
-// not that big a deal, since resources freed beforehand
 //
 // if I move to monitor 3 then create a new client, the new client is placed on monitor two and that on monitor three
 // remains
